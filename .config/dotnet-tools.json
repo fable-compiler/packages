@@ -13,6 +13,12 @@
       "commands": [
         "paket"
       ]
+    },
+    "fantomas": {
+      "version": "5.0.0-beta-009",
+      "commands": [
+        "fantomas"
+      ]
     }
   }
 }

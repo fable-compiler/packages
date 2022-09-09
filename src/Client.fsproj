@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <DefineConstants>FABLE_COMPILER</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Feliz.UseElmish.fs" />
+    <Compile Include="Extensions/Set.Extensions.fs" />
+    <Compile Include="Extensions/Elmish.Extensions.fs" />
+    <Compile Include="Types/NuGetResponse.fs" />
+    <Compile Include="Types/NuGetOption.fs" />
+    <Compile Include="Types/NugetSortBy.fs" />
+    <Compile Include="Types/PackageType.fs" />
+    <Compile Include="Types/Target.fs" />
+    <Compile Include="Types/SearchOptions.fs" />
+    <Compile Include="Components/Navbar.fs" />
+    <Compile Include="Components/Pagination.fs" />
+    <Compile Include="Components/SearchForm.fs" />
+    <Compile Include="App.fs" />
+    <Compile Include="Main.fs" />
+  </ItemGroup>
+  <Import Project="..\.paket\Paket.Restore.targets" />
+</Project>

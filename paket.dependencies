@@ -8,7 +8,13 @@ nuget FSharp.Core
 # Client
 nuget Fable.Core
 nuget Feliz
+nuget Feliz.Bulma
+nuget Feliz.UseDeferred
 nuget Fable.Elmish
+nuget Fable.SimpleHttp
+nuget Thoth.Json
+
+github fable-compiler/fable-compiler.github.io:dev docs/scss/utilities.scss
 
 group Build
     source https://api.nuget.org/v3/index.json

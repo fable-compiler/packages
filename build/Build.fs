@@ -10,9 +10,6 @@ let cwd = Environment.CurrentDirectory
 
 let srcPath = Path.getFullName "src"
 
-let gitOwner = "glutinum-org"
-let gitName = "Glutinum.Feliz.ReactResizeDetector"
-
 [<EntryPoint>]
 let main args =
     BuildTask.setupContextFromArgv args

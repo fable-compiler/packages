@@ -1,0 +1,62 @@
+// TODO: Split the style from fable-compiler/fable-compiler.github.io into separate files
+// So we can re-import them here to copy the same style as the main docs website
+
+@import "./../node_modules/bulma/sass/utilities/initial-variables";
+
+@import "./scss/custom_bulma_initial_variables.scss";
+
+@import "./../node_modules/bulma/sass/utilities/derived-variables";
+
+@import "./scss/custom_bulma_derived_variables.scss";
+
+@import "../node_modules/bulma/sass/utilities/_all.sass";
+@import "./../node_modules/bulma/bulma.sass";
+@import "./../node_modules/nacara-layout-standard/scss/nacara.scss";
+
+// Begin gatsby-remark-vscode specific
+:root {
+    --grvsc-padding-v: 1.25rem;
+}
+
+// Make the code use the full width for when user use line highlighting
+.content {
+    pre > code {
+        width: 100%;
+    }
+}
+// End gatsby-remark-vscode specific
+
+@import './../paket-files/fable-compiler/fable-compiler.github.io/docs/scss/utilities.scss';
+// @import './scss/blog-index.scss';
+// @import './scss/blog-post.scss';
+
+@import './scss/fable_main_style';
+@import './../node_modules/fable-form-simple-bulma/index.scss';
+
+input[type="checkbox"],
+input[type="radio"] {
+    margin-right: 0.5em;
+}
+
+.advanced-search-with-filters-button {
+    // color: $info;
+    position: relative;
+
+    > span {
+        font-weight: $weight-semibold !important;
+    }
+
+    &:hover {
+        cursor: pointer;
+
+        &::after {
+            position: absolute;
+            bottom: 2px;
+            right: 0;
+            content: ' ';
+            width: 100%;
+            height: 1px;
+            background-color: black;
+        }
+    }
+}
