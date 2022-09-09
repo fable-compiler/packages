@@ -34,11 +34,26 @@ let Pagination (props: PaginationProps) =
         prop.className "packages-pagination"
 
         prop.children [
+
             Bulma.paginationPrevious.a [
+                if props.CurrentPage <= 0 then
+                    prop.className "is-disabled"
+                else
+                    prop.onClick (fun _ ->
+                        props.OnNavigate (props.CurrentPage - 1)
+                    )
+
                 prop.text "Previous"
             ]
 
             Bulma.paginationNext.a [
+                if props.CurrentPage >= totalPage then
+                    prop.className "is-disabled"
+                else
+                    prop.onClick (fun _ ->
+                        props.OnNavigate (props.CurrentPage + 1)
+                    )
+
                 prop.text "Next"
             ]
 
