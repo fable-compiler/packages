@@ -63,13 +63,15 @@ let Pagination (props: PaginationProps) =
                         then
                             PaginationLink pageRank isCurrent props.OnNavigate
 
+                        // Render the last page
+                        // We handle try to render the last page before the "right ellipsis"
+                        // Because we always want to render the last page
+                        else if pageRank = totalPage then
+                            PaginationLink pageRank isCurrent props.OnNavigate
+
                         // If this is the page directly after the maxPageRank render an ellipsis
                         else if pageRank = maxPageRank + 1 then
                             Bulma.paginationEllipsis []
-
-                        // Always render the last page
-                        else if pageRank = totalPage then
-                            PaginationLink pageRank isCurrent props.OnNavigate
                 ]
             ]
         ]
