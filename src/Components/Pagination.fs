@@ -31,11 +31,7 @@ let Pagination (props: PaginationProps) =
 
     Bulma.pagination [
         pagination.isCentered
-        prop.style [
-            style.maxWidth (length.px 600)
-            style.marginLeft length.auto
-            style.marginRight length.auto
-        ]
+        prop.className "packages-pagination"
 
         prop.children [
             Bulma.paginationPrevious.a [

@@ -60,3 +60,24 @@ input[type="radio"] {
         }
     }
 }
+
+
+.packages-pagination {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+
+    @include mobile {
+        margin-left: $size-3;
+        margin-right: $size-3;
+
+        .pagination-previous {
+            margin-right: $size-4;
+        }
+
+        .pagination-next {
+            margin-left: $size-4;
+        }
+    }
+
+}

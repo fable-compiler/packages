@@ -50,24 +50,28 @@ let App () =
         Navbar()
 
         Bulma.container [
-            Bulma.section [
-                SearchForm
-                    {|
-                        OnSearch = setActiveSearchOptions
-                    |}
-            ]
+            prop.className "is-max-desktop"
 
-            match packages with
-            | Deferred.Failed error -> Html.text "Failed to fetch packages"
-            | Deferred.HasNotStartedYet -> null
-            | Deferred.InProgress -> Html.text "Loading..."
-            | Deferred.Resolved (Ok packages) ->
-                Pagination
-                    {|
-                        CurrentPage = currentPageRank
-                        TotalHits = packages.TotalHits
-                        OnNavigate = setCurrentPageRank
-                    |}
-            | Deferred.Resolved (Error error) -> Html.text error
+            prop.children [
+                Bulma.section [
+                    SearchForm
+                        {|
+                            OnSearch = setActiveSearchOptions
+                        |}
+                ]
+
+                match packages with
+                | Deferred.Failed error -> Html.text "Failed to fetch packages"
+                | Deferred.HasNotStartedYet -> null
+                | Deferred.InProgress -> Html.text "Loading..."
+                | Deferred.Resolved (Ok packages) ->
+                    Pagination
+                        {|
+                            CurrentPage = currentPageRank
+                            TotalHits = packages.TotalHits
+                            OnNavigate = setCurrentPageRank
+                        |}
+                | Deferred.Resolved (Error error) -> Html.text error
+            ]
         ]
     ]

@@ -161,8 +161,7 @@ let private CheckboxOptionField
 [<ReactComponent>]
 let private FormColumn (label: string) (children: ReactElement list) =
     Bulma.column [
-        column.is3Tablet
-        column.is2Widescreen
+        column.is3
 
         prop.children [
             Bulma.field.div [
