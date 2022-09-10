@@ -4,14 +4,16 @@ open Feliz
 open Feliz.Bulma
 
 [<ReactComponent>]
-let private PaginationLink (pageRank: int) (isCurrent: bool) (onNavigate: int -> unit)=
+let private PaginationLink
+    (pageRank: int)
+    (isCurrent: bool)
+    (onNavigate: int -> unit)
+    =
     Bulma.paginationLink.a [
         if isCurrent then
             paginationLink.isCurrent
 
-        prop.onClick (fun _ ->
-            onNavigate pageRank
-        )
+        prop.onClick (fun _ -> onNavigate pageRank)
 
         prop.text (pageRank + 1) // Human friendly page start from 1
     ]
@@ -19,12 +21,12 @@ let private PaginationLink (pageRank: int) (isCurrent: bool) (onNavigate: int ->
 type PaginationProps =
     {| CurrentPage: int
        TotalHits: int
-       OnNavigate: int -> unit |}
+       OnNavigate: int -> unit
+       ElementsPerPage : int |}
 
 [<ReactComponent>]
 let Pagination (props: PaginationProps) =
-    let elementsPerPage = 10
-    let totalPage = props.TotalHits / elementsPerPage
+    let totalPage = props.TotalHits / props.ElementsPerPage
     let deltaAroundCurrentPage = 1
     let minPageRank = props.CurrentPage - deltaAroundCurrentPage
     let maxPageRank = props.CurrentPage + deltaAroundCurrentPage
@@ -40,7 +42,7 @@ let Pagination (props: PaginationProps) =
                     prop.className "is-disabled"
                 else
                     prop.onClick (fun _ ->
-                        props.OnNavigate (props.CurrentPage - 1)
+                        props.OnNavigate(props.CurrentPage - 1)
                     )
 
                 prop.text "Previous"
@@ -51,7 +53,7 @@ let Pagination (props: PaginationProps) =
                     prop.className "is-disabled"
                 else
                     prop.onClick (fun _ ->
-                        props.OnNavigate (props.CurrentPage + 1)
+                        props.OnNavigate(props.CurrentPage + 1)
                     )
 
                 prop.text "Next"

@@ -225,3 +225,4 @@ __azurite*
 # LOCAL ENVIRONMENT
 env
 docker-data-folder/
+CssModules.fs

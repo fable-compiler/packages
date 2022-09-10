@@ -10,6 +10,7 @@ open Fable.Packages.Types
 open Fable.Packages.Components.Navbar
 open Fable.Packages.Components.SearchForm
 open Fable.Packages.Components.Pagination
+open Fable.Packages.Components.NuGetPackageMedia
 open Fable.SimpleHttp
 open Thoth.Json
 
@@ -24,12 +25,23 @@ let App () =
     let activeSearchOptions, setActiveSearchOptions =
         React.useState SearchOptions.initial
 
+    let elementsPerPage = 10
     let currentPageRank, setCurrentPageRank = React.useState 0
 
     let fetchPackages = async {
+        let queryParams =
+            [
+                "q=Tags%3A%22fable%22"
+                $"take=%i{elementsPerPage}"
+                $"skip=%i{currentPageRank * elementsPerPage}"
+            ]
+            |> String.concat "&"
+
+        let requestUrl =
+            $"https://azuresearch-usnc.nuget.org/query?%s{queryParams}"
+
         let! response =
-            Http.request
-                "https://azuresearch-usnc.nuget.org/query?q=Tags%3A%22fable%22"
+            Http.request requestUrl
             |> Http.method GET
             |> Http.header (Headers.accept "application/json")
             |> Http.send
@@ -65,12 +77,23 @@ let App () =
                 | Deferred.HasNotStartedYet -> null
                 | Deferred.InProgress -> Html.text "Loading..."
                 | Deferred.Resolved (Ok packages) ->
-                    Pagination
-                        {|
-                            CurrentPage = currentPageRank
-                            TotalHits = packages.TotalHits
-                            OnNavigate = setCurrentPageRank
-                        |}
+                    Html.div [
+                        prop.className "packages-list"
+                        packages.Data
+                        |> List.map NuGetPackageMedia
+                        |> prop.children
+
+                    ]
+
+                    Bulma.section [
+                        Pagination
+                            {|
+                                CurrentPage = currentPageRank
+                                TotalHits = packages.TotalHits
+                                OnNavigate = setCurrentPageRank
+                                ElementsPerPage = elementsPerPage
+                            |}
+                    ]
                 | Deferred.Resolved (Error error) -> Html.text error
             ]
         ]

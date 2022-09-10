@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "bulma": "^0.9.4",
+    "date-fns": "^2.29.2",
     "fable-form-simple-bulma": "^1.0.0",
     "nacara-layout-standard": "^1.7.0",
     "react": "^17.0.2",

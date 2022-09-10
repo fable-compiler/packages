@@ -5,6 +5,7 @@
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Helpers.fs" />
     <Compile Include="Feliz.UseElmish.fs" />
     <Compile Include="Extensions/Set.Extensions.fs" />
     <Compile Include="Extensions/Elmish.Extensions.fs" />
@@ -17,6 +18,7 @@
     <Compile Include="Components/Navbar.fs" />
     <Compile Include="Components/Pagination.fs" />
     <Compile Include="Components/SearchForm.fs" />
+    <Compile Include="Components/NuGetPackageMedia.fs" />
     <Compile Include="App.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>

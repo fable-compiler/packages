@@ -81,3 +81,67 @@ input[type="radio"] {
     }
 
 }
+
+.packages-list {
+    margin-right: 1.5rem;
+    margin-left: 1.5rem;
+
+    .media-content {
+        // Prevent vertical scrollbar to appear on mobile
+        // because of the default margin-bottom: -0.5rem
+        // when tags are the last child
+        .tags {
+            margin-bottom: 0;
+        }
+    }
+
+    .media:last-child {
+        border-bottom: $media-border-size solid $media-border-color;
+        padding-bottom: $media-spacing;
+    }
+
+    .media-left {
+        margin-right: 2rem;
+    }
+}
+
+
+.nuget-package-body {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    @include mobile {
+        flex-direction: column;
+    }
+}
+
+.nuget-package-summary {
+    width: 80%;
+    padding-right: 3rem;
+
+    @include mobile {
+        width: 100%;
+        padding-right: 0;
+    }
+}
+
+.nuget-package-statistics {
+    // 20% seems to be the right width to prevent wrapping from happening
+    // between the icon and the text
+    // If the screen because too small, the layout change to move the statistics
+    // under the summary section
+    width: 20%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    @include mobile {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        gap: 1rem;
+        flex-direction: row;
+        justify-content: end;
+        width: 100%;
+    }
+}
