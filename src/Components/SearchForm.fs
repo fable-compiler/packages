@@ -1,10 +1,15 @@
 module Fable.Packages.Components.SearchForm
 
+open Fable.Core.JsInterop
 open Feliz
 open Feliz.Bulma
 open Feliz.UseElmish
 open Elmish
 open Fable.Packages.Types
+
+// Workaround to have React-refresh working
+// I need to open an issue on react-refresh to see if they can improve the detection
+emitJsStatement () "import React from \"react\""
 
 type Model = SearchOptions
 
@@ -57,7 +62,6 @@ let private update (onSearch: SearchOptions -> unit) (msg: Msg) (model: Model) =
         newModel, Cmd.OfFunc.exec onSearch newModel
 
     | Search ->
-        printfn "%A" model
         printfn "Searching..."
         model, Cmd.OfFunc.exec onSearch model
 
@@ -132,7 +136,7 @@ let private CheckboxPackageTypeField
         (fun () -> dispatch (TogglePackageType packageType))
 
 [<ReactComponent>]
-let private checkradioSortByField
+let private CheckradioSortByField
     (sortBy: NuGetSortBy)
     (selectedSortBy: NuGetSortBy)
     (dispatch: Dispatch<Msg>)
@@ -226,15 +230,15 @@ let private Filters model dispatch =
                     ]
 
                     FormColumn "Sort by" [
-                        checkradioSortByField
+                        CheckradioSortByField
                             NuGetSortBy.Relevance
                             model.SortBy
                             dispatch
-                        checkradioSortByField
+                        CheckradioSortByField
                             NuGetSortBy.Downloads
                             model.SortBy
                             dispatch
-                        checkradioSortByField
+                        CheckradioSortByField
                             NuGetSortBy.RecentlyUpdated
                             model.SortBy
                             dispatch
@@ -307,6 +311,7 @@ let private SearchInputField model dispatch =
     ]
 
 type SearchFormProps = {| OnSearch: SearchOptions -> unit |}
+// type SearchFormProps = {| OnSearch: SearchOptions -> unit |}
 
 [<ReactComponent>]
 let SearchForm (props: SearchFormProps) =
@@ -316,3 +321,11 @@ let SearchForm (props: SearchFormProps) =
         SearchInputField model dispatch
         Filters model dispatch
     ]
+
+    // Html.div [
+    //     Html.div "Some text"
+    //     Html.button [
+    //         prop.onClick (fun _ -> props.OnSearch ())
+    //         prop.text "Search"
+    //     ]
+    // ]

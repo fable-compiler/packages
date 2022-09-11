@@ -28,7 +28,14 @@ let App () =
     let elementsPerPage = 10
     let currentPageRank, setCurrentPageRank = React.useState 0
 
+    let onSearch (searchOptions : SearchOptions) =
+        if activeSearchOptions <> searchOptions then
+            setActiveSearchOptions searchOptions
+            setCurrentPageRank 0
+
     let fetchPackages = async {
+        printfn "fetching packages"
+
         let queryParams =
             [
                 "q=Tags%3A%22fable%22"
@@ -50,8 +57,7 @@ let App () =
     }
 
     let packages =
-        React.useDeferred (
-            fetchPackages,
+        React.useDeferred (fetchPackages,
             [|
                 box activeSearchOptions
                 box currentPageRank
@@ -66,6 +72,14 @@ let App () =
 
             prop.children [
                 Bulma.section [
+                    Html.div "222"
+                    Html.button [
+                        prop.className "button is-primary"
+                        prop.text "Click me"
+                        prop.onClick (fun _ ->
+                            setCurrentPageRank (currentPageRank + 1)
+                        )
+                    ]
                     SearchForm
                         {|
                             OnSearch = setActiveSearchOptions

@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.fs" />
-    <Compile Include="Feliz.UseElmish.fs" />
+    <Compile Include="Lib/Feliz.UseElmish.fs" />
     <Compile Include="Extensions/Set.Extensions.fs" />
     <Compile Include="Extensions/Elmish.Extensions.fs" />
     <Compile Include="Types/NuGetResponse.fs" />

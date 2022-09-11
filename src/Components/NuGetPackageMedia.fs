@@ -1,6 +1,7 @@
 module Fable.Packages.Components.NuGetPackageMedia
 
 open Fable.Core.JS
+open Fable.Core.JsInterop
 open Feliz
 open Feliz.Bulma
 open Feliz.UseDeferred
@@ -8,6 +9,10 @@ open Fable.Packages.Types
 open Fable.SimpleHttp
 open Thoth.Json
 open Fable.DateFunctions
+
+// Workaround to have React-refresh working
+// I need to open an issue on react-refresh to see if they can improve the detection
+emitJsStatement () "import React from \"react\""
 
 [<ReactComponent>]
 let NuGetPackageMediaTags (tags: (string list) option) =
@@ -159,8 +164,6 @@ let NuGetPackageStatistics (package: NuGetPackage) =
                 |> Http.method GET
                 |> Http.header (Headers.accept "application/json")
                 |> Http.send
-
-            printfn "%A" response.responseText
 
             match
                 Decode.fromString
