@@ -181,7 +181,7 @@ let NuGetPackageStatistics (package: NuGetPackage) =
             return Error msg
     }
 
-    let registrationInfo = React.useDeferred (fetchRegistrationInfo, [||])
+    let registrationInfo = React.useDeferredNoCancel (fetchRegistrationInfo, [||])
 
     Html.div [
         prop.className "nuget-package-statistics"
@@ -204,10 +204,13 @@ let NuGetPackageStatistics (package: NuGetPackage) =
 
                 StatisticsRow "fas fa-history" timePastSinceLastUpdate
 
-            | Deferred.Failed _
             | Deferred.HasNotStartedYet
-            | Deferred.InProgress
-            | Deferred.Resolved (Error _) -> null
+            | Deferred.InProgress ->
+                StatisticsRow "fas fa-history" "Loading..."
+
+            | Deferred.Failed _
+            | Deferred.Resolved (Error _) ->
+                StatisticsRow "fas fa-history" "Error..."
         ]
     ]
 

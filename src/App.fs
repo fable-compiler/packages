@@ -23,14 +23,14 @@ emitJsStatement () "import React from \"react\""
 [<ReactComponent>]
 let App () =
     let activeSearchOptions, setActiveSearchOptions =
-        React.useState SearchOptions.initial
+        React.useStateWithUpdater SearchOptions.initial
 
     let elementsPerPage = 10
     let currentPageRank, setCurrentPageRank = React.useState 0
 
-    let onSearch (searchOptions : SearchOptions) =
+    let onSearch (searchOptions: SearchOptions) =
         if activeSearchOptions <> searchOptions then
-            setActiveSearchOptions searchOptions
+            setActiveSearchOptions (fun _ -> searchOptions)
             setCurrentPageRank 0
 
     let fetchPackages = async {
@@ -57,12 +57,21 @@ let App () =
     }
 
     let packages =
-        React.useDeferred (fetchPackages,
+        React.useDeferredNoCancel (
+            fetchPackages,
             [|
                 box activeSearchOptions
                 box currentPageRank
             |]
         )
+
+    React.useEffect (
+        (fun () -> printfn "Searching for packages use effect"),
+        [|
+            box activeSearchOptions
+            box currentPageRank
+        |]
+    )
 
     Html.div [
         Navbar()
@@ -72,17 +81,14 @@ let App () =
 
             prop.children [
                 Bulma.section [
-                    Html.div "222"
-                    Html.button [
-                        prop.className "button is-primary"
-                        prop.text "Click me"
-                        prop.onClick (fun _ ->
-                            setCurrentPageRank (currentPageRank + 1)
-                        )
-                    ]
                     SearchForm
                         {|
-                            OnSearch = setActiveSearchOptions
+                            OnSearch =
+                                (fun newSearchOptions ->
+                                    setActiveSearchOptions (fun _ ->
+                                        newSearchOptions
+                                    )
+                                )
                         |}
                 ]
 
