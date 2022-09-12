@@ -12,7 +12,11 @@
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
         "**/*.crswap": true,
-        "**/fable_modules": true
+        "**/fable_modules": true,
+        "**/bin": true,
+        "**/dist": true,
+        "**/obj": true,
+        "**/paket-files": true
     },
     "explorer.fileNesting.enabled": true,
     "explorer.fileNesting.patterns": {
