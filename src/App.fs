@@ -7,8 +7,9 @@ open Feliz
 open Feliz.Bulma
 open Feliz.UseDeferred
 open Fable.Packages.Types
-open Fable.Packages.Components.Navbar
+open Fable.Packages.Components
 open Fable.Packages.Components.SearchForm
+open Fable.Packages.Components.Navbar
 open Fable.Packages.Components.Pagination
 open Fable.Packages.Components.NuGetPackageMedia
 open Fable.SimpleHttp
@@ -23,14 +24,14 @@ emitJsStatement () "import React from \"react\""
 [<ReactComponent>]
 let App () =
     let activeSearchOptions, setActiveSearchOptions =
-        React.useStateWithUpdater SearchOptions.initial
+        React.useState SearchOptions.initial
 
     let elementsPerPage = 10
     let currentPageRank, setCurrentPageRank = React.useState 0
 
     let onSearch (searchOptions: SearchOptions) =
         if activeSearchOptions <> searchOptions then
-            setActiveSearchOptions (fun _ -> searchOptions)
+            setActiveSearchOptions searchOptions
             setCurrentPageRank 0
 
     let fetchPackages = async {
@@ -74,21 +75,16 @@ let App () =
     )
 
     Html.div [
-        Navbar()
+        Components.Navbar()
 
         Bulma.container [
             prop.className "is-max-desktop"
 
             prop.children [
                 Bulma.section [
-                    SearchForm
+                    Components.SearchForm
                         {|
-                            OnSearch =
-                                (fun newSearchOptions ->
-                                    setActiveSearchOptions (fun _ ->
-                                        newSearchOptions
-                                    )
-                                )
+                            OnSearch = setActiveSearchOptions
                         |}
                 ]
 
@@ -100,13 +96,13 @@ let App () =
                     Html.div [
                         prop.className "packages-list"
                         packages.Data
-                        |> List.map NuGetPackageMedia
+                        |> List.map Components.NuGetPackageMedia
                         |> prop.children
 
                     ]
 
                     Bulma.section [
-                        Pagination
+                        Components.Pagination
                             {|
                                 CurrentPage = currentPageRank
                                 TotalHits = packages.TotalHits

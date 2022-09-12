@@ -16,6 +16,7 @@
     <Compile Include="Types/PackageType.fs" />
     <Compile Include="Types/Target.fs" />
     <Compile Include="Types/SearchOptions.fs" />
+    <Compile Include="Components/Components.fs" />
     <Compile Include="Components/Navbar.fs" />
     <Compile Include="Components/Pagination.fs" />
     <Compile Include="Components/SearchForm.fs" />
