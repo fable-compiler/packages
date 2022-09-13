@@ -14,6 +14,7 @@ nuget Fable.Elmish
 nuget Fable.SimpleHttp
 nuget Thoth.Json
 nuget Fable.DateFunctions
+nuget Feliz.Router
 
 github fable-compiler/fable-compiler.github.io:dev docs/scss/utilities.scss
 

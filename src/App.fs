@@ -1,19 +1,14 @@
-module App
+module Fable.Packages.App
 
-open Fable.Core
-open Fable.Core.JS
 open Fable.Core.JsInterop
 open Feliz
 open Feliz.Bulma
-open Feliz.UseDeferred
-open Fable.Packages.Types
+open Feliz.Router
 open Fable.Packages.Components
-open Fable.Packages.Components.SearchForm
 open Fable.Packages.Components.Navbar
-open Fable.Packages.Components.Pagination
-open Fable.Packages.Components.NuGetPackageMedia
-open Fable.SimpleHttp
-open Thoth.Json
+open Fable.Packages.Pages
+open Fable.Packages.Pages.Search
+open Fable.Packages.Pages.NotFound
 
 importSideEffects "./index.scss"
 
@@ -23,56 +18,18 @@ emitJsStatement () "import React from \"react\""
 
 [<ReactComponent>]
 let App () =
-    let activeSearchOptions, setActiveSearchOptions =
-        React.useState SearchOptions.initial
+    let (page, setPage) = React.useState(Router.parseUrl(Router.currentUrl()))
 
-    let elementsPerPage = 10
-    let currentPageRank, setCurrentPageRank = React.useState 0
+    let pageElement =
+        match page with
+        | Router.Page.Search ->
+            Pages.Search()
 
-    let onSearch (searchOptions: SearchOptions) =
-        if activeSearchOptions <> searchOptions then
-            setActiveSearchOptions searchOptions
-            setCurrentPageRank 0
+        | Router.Page.Package packageName ->
+            Html.div packageName
 
-    let fetchPackages = async {
-        printfn "fetching packages"
-
-        let queryParams =
-            [
-                "q=Tags%3A%22fable%22"
-                $"take=%i{elementsPerPage}"
-                $"skip=%i{currentPageRank * elementsPerPage}"
-            ]
-            |> String.concat "&"
-
-        let requestUrl =
-            $"https://azuresearch-usnc.nuget.org/query?%s{queryParams}"
-
-        let! response =
-            Http.request requestUrl
-            |> Http.method GET
-            |> Http.header (Headers.accept "application/json")
-            |> Http.send
-
-        return Decode.fromString NuGetResponse.decoder response.responseText
-    }
-
-    let packages =
-        React.useDeferredNoCancel (
-            fetchPackages,
-            [|
-                box activeSearchOptions
-                box currentPageRank
-            |]
-        )
-
-    React.useEffect (
-        (fun () -> printfn "Searching for packages use effect"),
-        [|
-            box activeSearchOptions
-            box currentPageRank
-        |]
-    )
+        | Router.Page.NotFound ->
+            Pages.NotFound()
 
     Html.div [
         Components.Navbar()
@@ -81,36 +38,10 @@ let App () =
             prop.className "is-max-desktop"
 
             prop.children [
-                Bulma.section [
-                    Components.SearchForm
-                        {|
-                            OnSearch = setActiveSearchOptions
-                        |}
+                React.router [
+                    router.onUrlChanged (Router.parseUrl >> setPage)
+                    router.children pageElement
                 ]
-
-                match packages with
-                | Deferred.Failed error -> Html.text "Failed to fetch packages"
-                | Deferred.HasNotStartedYet -> null
-                | Deferred.InProgress -> Html.text "Loading..."
-                | Deferred.Resolved (Ok packages) ->
-                    Html.div [
-                        prop.className "packages-list"
-                        packages.Data
-                        |> List.map Components.NuGetPackageMedia
-                        |> prop.children
-
-                    ]
-
-                    Bulma.section [
-                        Components.Pagination
-                            {|
-                                CurrentPage = currentPageRank
-                                TotalHits = packages.TotalHits
-                                OnNavigate = setCurrentPageRank
-                                ElementsPerPage = elementsPerPage
-                            |}
-                    ]
-                | Deferred.Resolved (Error error) -> Html.text error
             ]
         ]
     ]

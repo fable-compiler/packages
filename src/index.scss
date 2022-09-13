@@ -26,12 +26,12 @@
 }
 // End gatsby-remark-vscode specific
 
-@import './../paket-files/fable-compiler/fable-compiler.github.io/docs/scss/utilities.scss';
+@import "./../paket-files/fable-compiler/fable-compiler.github.io/docs/scss/utilities.scss";
 // @import './scss/blog-index.scss';
 // @import './scss/blog-post.scss';
 
-@import './scss/fable_main_style';
-@import './../node_modules/fable-form-simple-bulma/index.scss';
+@import "./scss/fable_main_style";
+@import "./../node_modules/fable-form-simple-bulma/index.scss";
 
 input[type="checkbox"],
 input[type="radio"] {
@@ -53,14 +53,13 @@ input[type="radio"] {
             position: absolute;
             bottom: 2px;
             right: 0;
-            content: ' ';
+            content: " ";
             width: 100%;
             height: 1px;
             background-color: black;
         }
     }
 }
-
 
 .packages-pagination {
     max-width: 600px;
@@ -79,7 +78,6 @@ input[type="radio"] {
             margin-left: $size-4;
         }
     }
-
 }
 
 .packages-list {
@@ -104,7 +102,6 @@ input[type="radio"] {
         margin-right: 2rem;
     }
 }
-
 
 .nuget-package-body {
     display: flex;
@@ -144,4 +141,17 @@ input[type="radio"] {
         justify-content: end;
         width: 100%;
     }
+}
+
+// Fixed .hero size to work correctly with `navbar is-spaced` sizing
+.hero {
+    &.is-fullheight-with-spaced-navbar {
+        min-height: calc(100vh - #{$navbar-height + $navbar-padding-vertical * 2});
+
+        .hero-body {
+            align-items: center;
+            display: flex;
+        }
+    }
+
 }

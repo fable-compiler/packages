@@ -33,7 +33,17 @@ type Components with
 
     [<ReactComponent>]
     static member Pagination(props: PaginationProps) =
-        let totalPage = props.TotalHits / props.ElementsPerPage
+        let totalPage =
+            let computedTotalPage =
+                Helpers.computateTotalPageCount
+                    props.TotalHits
+                    props.ElementsPerPage
+
+            // I don't know why but for the pagination to be correct,
+            // we need to remove 1 to the total page count.
+            // Note: When fetching the packages from NuGet, we don't need to do that
+            computedTotalPage - 1
+
         let deltaAroundCurrentPage = 1
         let minPageRank = props.CurrentPage - deltaAroundCurrentPage
         let maxPageRank = props.CurrentPage + deltaAroundCurrentPage

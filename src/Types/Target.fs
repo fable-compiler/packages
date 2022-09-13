@@ -20,11 +20,11 @@ module Target =
         | Target.Dart -> "Dart"
         | Target.All -> "All"
 
-    let rec toTag (target: Target) =
+    let toTag (target: Target) =
         match target with
         | Target.Dotnet -> "fable-dotnet"
         | Target.JavaScript -> "fable-javascript"
         | Target.Rust -> "fable-rust"
         | Target.Python -> "fable-python"
         | Target.Dart -> "fable-dart"
-        | Target.All -> "fable-all"
+        | Target.All -> "fable"

@@ -9,6 +9,7 @@ open Fable.Packages.Types
 open Fable.SimpleHttp
 open Thoth.Json
 open Fable.DateFunctions
+open Fable.Packages
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -80,7 +81,7 @@ type Components with
                     prop.className "title is-4"
                     prop.children [
                         Html.a [
-                            prop.href nugetPackageUrl
+                            prop.href (Router.toUrl (Router.Page.Package package.Id))
                             prop.text package.Id
                         ]
                         Html.span [
@@ -93,7 +94,6 @@ type Components with
                 match package.Owners with
                 | Some owners ->
                     Html.p [
-                        // title.is6
                         prop.className "subtitle is-6"
                         prop.children [
                             Html.span [
@@ -198,7 +198,7 @@ type Components with
                 | Some totalDownloads ->
                     Components.StatisticsRow
                         "fas fa-download"
-                        (Helpers.JS.formatNumberToLocalString totalDownloads)
+                        (Helpers.JS.formatNumberToLocalString (float totalDownloads))
                 | None -> null
 
                 match registrationInfo with
@@ -226,18 +226,22 @@ type Components with
     static member NuGetPackageMedia(package: NuGetPackage) =
 
         Bulma.media [
-            Bulma.mediaLeft [
-                Components.NuGetPackageIcon package.IconUrl
-            ]
+            prop.key package.Id
 
-            Bulma.mediaContent [
-                Html.div [
-                    prop.className "nuget-package-body"
-                    prop.children [
-                        Components.NuGetPackageSummary package
-                        Components.NuGetPackageStatistics package
-                    ]
+            prop.children [
+                Bulma.mediaLeft [
+                    Components.NuGetPackageIcon package.IconUrl
                 ]
-                Components.NuGetPackageMediaTags package.Tags
+
+                Bulma.mediaContent [
+                    Html.div [
+                        prop.className "nuget-package-body"
+                        prop.children [
+                            Components.NuGetPackageSummary package
+                            Components.NuGetPackageStatistics package
+                        ]
+                    ]
+                    Components.NuGetPackageMediaTags package.Tags
+                ]
             ]
         ]

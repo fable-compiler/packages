@@ -62,7 +62,6 @@ let private update (onSearch: SearchOptions -> unit) (msg: Msg) (model: Model) =
         newModel, Cmd.OfFunc.exec onSearch newModel
 
     | Search ->
-        printfn "Searching..."
         model, Cmd.OfFunc.exec onSearch model
 
 type SearchFormProps = {| OnSearch: SearchOptions -> unit |}

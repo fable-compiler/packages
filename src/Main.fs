@@ -1,10 +1,6 @@
-module Main
+module Fable.Packages.Main
 
 open Feliz
 open Browser.Dom
 
-ReactDOM.render(
-    App.App()
-    ,
-    document.getElementById("root")
-)
+ReactDOM.render (App.App(), document.getElementById ("root"))

@@ -50,7 +50,7 @@ type NuGetPackage =
         Tags : (string list) option
         Authors : (string list) option
         Owners : (string list) option
-        TotalDownloads : int option
+        TotalDownloads : int64 option
         Versions : NuGetPackageVersion list
         PackageTypes : NuGetPackageType list
     }
@@ -69,7 +69,7 @@ module NuGetPackage =
                 Tags = get.Optional.Field "tags" (Decode.list Decode.string)
                 Authors = get.Optional.Field "authors" (Decode.list Decode.string)
                 Owners = get.Optional.Field "owners" (Decode.list Decode.string)
-                TotalDownloads = get.Optional.Field "totalDownloads" Decode.int
+                TotalDownloads = get.Optional.Field "totalDownloads" Decode.int64
                 Versions = get.Required.Field "versions" (Decode.list NuGetPackageVersion.decoder)
                 PackageTypes = get.Required.Field "packageTypes" (Decode.list NuGetPackageType.decoder)
             }
