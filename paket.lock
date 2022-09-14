@@ -68,13 +68,13 @@ NUGET
       Fable.Core (>= 3.1.6 < 4.0)
       Feliz (>= 1.17 < 2.0)
       FSharp.Core (>= 4.7.2)
-    FSharp.Core (6.0.5)
+    FSharp.Core (6.0.6)
     Thoth.Json (7.0)
       Fable.Core (>= 3.1.6)
       FSharp.Core (>= 4.7.2)
 GITHUB
   remote: fable-compiler/fable-compiler.github.io
-    docs/scss/utilities.scss (801441ccf97ea083f7b00fd3ac9fa6b1c4d7ea1a)
+    docs/scss/utilities.scss (e4229259595d6aa610ebac9a71b937943a2a946a)
 GROUP Build
 STORAGE: NONE
 RESTRICTION: == net6.0

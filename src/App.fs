@@ -18,18 +18,16 @@ emitJsStatement () "import React from \"react\""
 
 [<ReactComponent>]
 let App () =
-    let (page, setPage) = React.useState(Router.parseUrl(Router.currentUrl()))
+    let (page, setPage) =
+        React.useState (Router.parseUrl (Router.currentUrl ()))
 
     let pageElement =
         match page with
-        | Router.Page.Search ->
-            Pages.Search()
+        | Router.Page.Search -> Pages.Search()
 
-        | Router.Page.Package packageName ->
-            Html.div packageName
+        | Router.Page.Package packageName -> Html.div packageName
 
-        | Router.Page.NotFound ->
-            Pages.NotFound()
+        | Router.Page.NotFound -> Pages.NotFound()
 
     Html.div [
         Components.Navbar()

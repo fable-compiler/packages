@@ -116,3 +116,9 @@ module NuGetRegistration5Semver1 =
                 Registration = get.Required.Field "registration" Decode.string
             }
         )
+
+type IndexedNuGetPackage =
+    {
+        Package : NuGetPackage
+        LastVersionInfo : NuGetRegistration5Semver1
+    }

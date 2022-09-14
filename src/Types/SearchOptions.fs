@@ -4,7 +4,7 @@ type SearchOptions = {
     TextField: string
     Targets: Set<Target>
     PackageTypes: Set<PackageType>
-    SortBy: NuGetSortBy
+    SortBy: SortBy
     Options: Set<NuGetOption>
 }
 
@@ -14,7 +14,7 @@ module SearchOptions =
         TextField = ""
         Targets = Set.empty
         PackageTypes = Set.empty
-        SortBy = NuGetSortBy.Relevance
+        SortBy = SortBy.Relevance
         Options =
             Set.ofList [
                 NuGetOption.IncludePreRelease

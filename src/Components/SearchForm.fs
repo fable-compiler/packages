@@ -16,7 +16,7 @@ type Model = SearchOptions
 type private Msg =
     | ToggleTarget of Target
     | TogglePackageType of PackageType
-    | ChooseSortBy of NuGetSortBy
+    | ChooseSortBy of SortBy
     | ToggleOption of NuGetOption
     | ChangeTextField of string
     | Search
@@ -147,14 +147,14 @@ type Components with
     [<ReactComponent>]
     static member private CheckradioSortByField
         (
-            sortBy: NuGetSortBy,
-            selectedSortBy: NuGetSortBy,
+            sortBy: SortBy,
+            selectedSortBy: SortBy,
             dispatch: Dispatch<Msg>
         ) =
         let isChecked = sortBy = selectedSortBy
 
         Components.CheckradioField(
-            NuGetSortBy.toLabel sortBy,
+            SortBy.toLabel sortBy,
             "sort-by",
             isChecked,
             fun () -> dispatch (ChooseSortBy sortBy)
@@ -281,17 +281,17 @@ type Components with
                             "Sort by",
                             [
                                 Components.CheckradioSortByField(
-                                    NuGetSortBy.Relevance,
+                                    SortBy.Relevance,
                                     model.SortBy,
                                     dispatch
                                 )
                                 Components.CheckradioSortByField(
-                                    NuGetSortBy.Downloads,
+                                    SortBy.Downloads,
                                     model.SortBy,
                                     dispatch
                                 )
                                 Components.CheckradioSortByField(
-                                    NuGetSortBy.RecentlyUpdated,
+                                    SortBy.RecentlyUpdated,
                                     model.SortBy,
                                     dispatch
                                 )

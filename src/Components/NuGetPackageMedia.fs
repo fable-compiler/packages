@@ -218,7 +218,7 @@ type Components with
 
                 | Deferred.Failed _
                 | Deferred.Resolved (Error _) ->
-                    Components.StatisticsRow "fas fa-history" "Error..."
+                    Components.StatisticsRow "fas fa-history" "Failed to retrieve"
             ]
         ]
 

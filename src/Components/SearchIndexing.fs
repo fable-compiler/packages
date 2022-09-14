@@ -13,13 +13,18 @@ open Browser.Dom
 // I need to open an issue on react-refresh to see if they can improve the detection
 emitJsStatement () "import React from \"react\""
 
+[<RequireQualifiedAccess>]
+type private Step =
+    | IndexingPackageList
+    | IndexingLastPackageVersion of packages: NuGetPackage list
+
 type private IndexingProgress = {
     CurrentPage: int
     TotalPages: int
 }
 
 [<RequireQualifiedAccess>]
-type FetchPageResult =
+type private FetchPageResult =
     | Success of NuGetPackage list
     | DeserializationError of string
     | MaximumPackagesReached
@@ -28,7 +33,9 @@ type SearchIndexingProps = {| OnReady: NuGetPackage list -> unit |}
 
 type Components with
 
-    static member private DisplayProgress(indexingProgress: IndexingProgress) =
+    static member private DisplayProgressSteps
+        (indexingProgress: IndexingProgress)
+        =
         let text =
             // Indexing info not available yet, we display an info message
             // to avoid layout jump when info become available
@@ -41,6 +48,156 @@ type Components with
             size.isSize4
             color.hasTextGrey
             prop.text text
+        ]
+
+    [<ReactComponent>]
+    static member private IndexingLastPackageVersion
+        (packages: NuGetPackage list)
+        (onCompleted: IndexedNuGetPackage list -> unit)
+        =
+        // In the future, we could use a web worker to cache previous request result
+        // In general, a specific package version is not going to be updated often
+        // Using a stale while revalidate strategy could be a good idea, it will give
+        // a good boost in performance between visits and we will have the latest version
+        // available most of the time
+        let chunkSize = 25
+
+        let indexingProgress, setIndexingProgress =
+            React.useStateWithUpdater
+                {
+                    CurrentPage = 0
+                    TotalPages = packages.Length
+                }
+
+        let task = async {
+            let start = System.DateTime.Now
+            let batches =
+                packages
+                |> Seq.chunkBySize chunkSize
+                |> Seq.map (fun packages ->
+                    packages
+                    |> Seq.map (fun package ->
+                        let packageRegistrationUrl =
+                            package.Versions
+                            |> List.tryFind (fun version ->
+                                version.Version = package.Version
+                            )
+                            |> Option.map (fun versionInfo -> versionInfo.Id)
+
+                        match packageRegistrationUrl with
+                        | Some packageRegistrationUrl -> async {
+                            let! response =
+                                Http.request packageRegistrationUrl
+                                |> Http.method GET
+                                |> Http.header (
+                                    Headers.accept "application/json"
+                                )
+                                |> Http.send
+
+                            let jsonResult =
+                                Decode.fromString
+                                    NuGetRegistration5Semver1.decoder
+                                    response.responseText
+
+                            let result =
+                                match jsonResult with
+                                | Ok semverInfo ->
+                                    {
+                                        Package = package
+                                        LastVersionInfo = semverInfo
+                                    }
+                                    |> Ok
+                                | Error errorMessage -> Error errorMessage
+
+                            return result
+                          }
+
+                        | None -> failwith "Package registration url not found"
+                    )
+                    |> Async.Parallel
+                )
+
+            let indexedPackages = ResizeArray(packages.Length)
+
+            for batch in batches do
+                let! batchResult = batch
+
+                // Update progress
+                setIndexingProgress (fun progress ->
+                    { progress with
+                        CurrentPage = progress.CurrentPage + batchResult.Length
+                    }
+                )
+
+                for package in batchResult do
+                    match package with
+                    | Ok package -> indexedPackages.Add package
+                    | Error error ->
+                        // TODO: Inform user of potential errors and so missing packages
+                        console.error error
+
+            let finish  = System.DateTime.Now
+            let elapsed = finish - start
+            printfn "Elapsed: %A" elapsed.TotalSeconds
+            onCompleted (Seq.toList indexedPackages)
+        }
+
+        let _ =
+            React.useDeferredNoCancel (
+                task,
+                [|
+                    box onCompleted
+                |]
+            )
+
+        Components.DisplayProgress(
+            indexingProgress,
+            "Fable.Packages is retrieving the packages information"
+        )
+
+    static member private DisplayProgress
+        (
+            indexingProgress: IndexingProgress,
+            infoText: string
+        ) =
+
+        Bulma.hero [
+            prop.className "is-fullheight-with-spaced-navbar"
+
+            prop.children [
+                Bulma.heroBody [
+                    Bulma.container [
+                        text.hasTextCentered
+
+                        prop.children [
+
+                            Html.p [
+                                prop.className "title is-3"
+                                prop.text "Indexing packages"
+                            ]
+
+                            Bulma.progress [
+                                color.isPrimary
+
+                                prop.value indexingProgress.CurrentPage
+                                prop.max indexingProgress.TotalPages
+                            ]
+
+                            Bulma.content [
+
+                                Components.DisplayProgressSteps indexingProgress
+
+                                Bulma.text.p [
+
+                                    text.isItalic
+                                    prop.text infoText
+
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
         ]
 
     /// <summary>
@@ -62,7 +219,7 @@ type Components with
     /// <param name="onReady"></param>
     /// <returns></returns>
     [<ReactComponent>]
-    static member SearchIndexing(onReady: NuGetPackage list -> unit) =
+    static member IndexingPackageList(onCompleted: NuGetPackage list -> unit) =
         // At the time of writting there are around 350 pacakges
         // tagged with `fable` using 50 elements per page means
         // we will have to make 7 requests to get all the packages
@@ -72,7 +229,17 @@ type Components with
         // to be able to adapt in the future.
         // If more packages are added to the nuget registry we can increase the
         // number of elements per page accordingly.
-        let elementsPerPage = 50
+
+        // FOLLOWING SECTION REPLACE ABOVE SECTION WHILE WAITING A FIX FROM NUGET.ORG API
+
+        // Ordering is not stable between different page calls
+        // This means that if we make several calls to the nuget registry
+        // some packages are duplicated and others are missing.
+        // To workaround this issue, we use the maximum page size of 1000
+        // If that bug is fixed in the future, I would like to reduce the number of elements
+        // per pages to have a better progress report for the user.
+        // Workaround mentionned on this issue: https://github.com/NuGet/NuGetGallery/issues/7494
+        let elementsPerPage = 1000
         let maximumPackages = 4000
 
         let indexingProgress, setIndexingProgress =
@@ -88,7 +255,11 @@ type Components with
                     "q=Tags:\"fable\"" // We want to only the Fable packages
                     $"skip=%i{pageRank * elementsPerPage}"
                     $"take=%i{elementsPerPage}"
+                    // Include prerelease packages and set the semVerLevel to 2.0.0
+                    // to match the way NuGet.org search works
+                    // See: https://github.com/NuGet/NuGetGallery/issues/9235
                     "prerelease=true"
+                    "semVerLevel=2.0.0"
                 ]
                 |> List.map window.encodeURI
                 |> String.concat "&"
@@ -125,7 +296,15 @@ type Components with
 
                 if newPackages.Length > maximumPackages then
                     return FetchPageResult.MaximumPackagesReached
-                else if currentPage > totalPage then
+                else if currentPage >= totalPage then
+                    let packages =
+                        packages
+                        // Make sure we have no duplicates
+                        // This is a preventive measure because of inconsistent
+                        // ordering from NuGet API.
+                        // When the bug is fixed on their side, we should be able to remove this.
+                        |> List.distinctBy (fun package -> package.Id)
+
                     return FetchPageResult.Success packages
                 else
                     return! fetchAllPages (currentPage + 1) newPackages
@@ -136,7 +315,7 @@ type Components with
         let fetchPackages = async {
             match! fetchAllPages 0 [] with
             // All good, notify the parent component that we are ready
-            | FetchPageResult.Success packages -> onReady packages
+            | FetchPageResult.Success packages -> onCompleted packages
 
             // Something went wrong, report the error
             | FetchPageResult.DeserializationError error ->
@@ -150,45 +329,33 @@ type Components with
             React.useDeferredNoCancel (
                 fetchPackages,
                 [|
-                    box onReady
+                    box onCompleted
                 |]
             )
 
-        Bulma.hero [
-            prop.className "is-fullheight-with-spaced-navbar"
+        Components.DisplayProgress(
+            indexingProgress,
+            "Fable.Packages is retrieving all the Fable packages from NuGet.org"
+        )
 
-            prop.children [
-                Bulma.heroBody [
-                    Bulma.container [
-                        text.hasTextCentered
+    [<ReactComponent>]
+    static member SearchIndexing(onReady: IndexedNuGetPackage list -> unit) =
+        let currentStep, setCurrentStep =
+            React.useState Step.IndexingPackageList
 
-                        prop.children [
+        let onIndexingPackageListCompleted (packages: NuGetPackage list) =
+            setCurrentStep (Step.IndexingLastPackageVersion packages)
 
-                            Html.p [
-                                prop.className "title is-3"
-                                prop.text "Indexing packages"
-                            ]
+        let onIndexingLastPackageVersionCompleted
+            (indexedPackages: IndexedNuGetPackage list)
+            =
+            onReady indexedPackages
 
-                            Bulma.progress [
-                                color.isPrimary
+        match currentStep with
+        | Step.IndexingPackageList ->
+            Components.IndexingPackageList onIndexingPackageListCompleted
 
-                                prop.value indexingProgress.CurrentPage
-                                prop.max indexingProgress.TotalPages
-                            ]
-
-                            Bulma.content [
-
-                                Components.DisplayProgress indexingProgress
-
-                                Bulma.text.p [
-
-                                    text.isItalic
-                                    prop.text
-                                        "Fable.Packages needs to index all the packages to be able to search them."
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ]
+        | Step.IndexingLastPackageVersion packages ->
+            Components.IndexingLastPackageVersion
+                packages
+                onIndexingLastPackageVersionCompleted

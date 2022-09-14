@@ -19,20 +19,20 @@ emitJsStatement () "import React from \"react\""
 
 type private Steps =
     | IndexingInProgress
-    | Ready of ResizeArray<NuGetPackage>
+    | Ready of ResizeArray<IndexedNuGetPackage>
 
 let private init () = IndexingInProgress
 
 let private filterByPackageTypes
     (searchedPackageTypes: Set<PackageType>)
-    (package: NuGetPackage)
+    (package: IndexedNuGetPackage)
     =
     // User didn't request a specific package type so no filter is applied
     // Always return true
     if searchedPackageTypes.IsEmpty then
         true
     else
-        match package.Tags with
+        match package.Package.Tags with
         // The packages has some tags, so we can check if it contains
         // one of the searched package type
         | Some tags ->
@@ -46,14 +46,14 @@ let private filterByPackageTypes
 
 let private filterByTargets
     (searchedTargets: Set<Target>)
-    (package: NuGetPackage)
+    (package: IndexedNuGetPackage)
     =
     // User didn't request a specific package type so no filter is applied
     // Always return true
     if searchedTargets.IsEmpty then
         true
     else
-        match package.Tags with
+        match package.Package.Tags with
         // The packages has some tags, so we can check if it contains
         // one of the searched package type
         | Some tags ->
@@ -69,7 +69,7 @@ type Components with
 
     [<ReactComponent>]
     static member private ShowSearchFormAndResults
-        (indexedPackages: ResizeArray<NuGetPackage>)
+        (indexedPackages: ResizeArray<IndexedNuGetPackage>)
         =
 
         let activeSearchOptions, setActiveSearchOptions =
@@ -102,6 +102,15 @@ type Components with
                     |> Seq.filter (
                         filterByTargets activeSearchOptions.Targets
                     )
+                    |> Seq.sortWith (fun packageA packageB ->
+                        match activeSearchOptions.SortBy with
+                        | SortBy.Relevance ->
+                            compare packageA.Package.TotalDownloads packageB.Package.TotalDownloads * -1
+                        | SortBy.Downloads ->
+                            compare packageA.Package.TotalDownloads packageB.Package.TotalDownloads * -1
+                        | SortBy.RecentlyUpdated ->
+                            compare packageA.LastVersionInfo.Published packageB.LastVersionInfo.Published * -1
+                    )
                     |> ResizeArray
 
                 setMatchedPackages result
@@ -128,7 +137,9 @@ type Components with
                     |> Seq.skip (currentPage * elementsPerPage)
                     // Take only the current page
                     |> Seq.truncate elementsPerPage
-                    |> Seq.map Components.NuGetPackageMedia
+                    |> Seq.map (fun indexedPackage ->
+                        Components.NuGetPackageMedia indexedPackage.Package
+                    )
                     |> prop.children
                 ]
             else

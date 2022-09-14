@@ -9,10 +9,12 @@
     <Compile Include="Lib/Feliz.UseElmish.fs" />
     <Compile Include="Lib/Feliz.UseDeferred.fs" />
     <Compile Include="Extensions/Set.Extensions.fs" />
+    <Compile Include="Extensions/Array.Extensions.fs" />
+    <Compile Include="Extensions/List.Extensions.fs" />
     <Compile Include="Extensions/Elmish.Extensions.fs" />
     <Compile Include="Types/NuGetResponse.fs" />
     <Compile Include="Types/NuGetOption.fs" />
-    <Compile Include="Types/NugetSortBy.fs" />
+    <Compile Include="Types/SortBy.fs" />
     <Compile Include="Types/PackageType.fs" />
     <Compile Include="Types/Target.fs" />
     <Compile Include="Types/SearchOptions.fs" />
