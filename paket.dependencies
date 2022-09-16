@@ -18,6 +18,7 @@ nuget Feliz.Router
 nuget Glutinum.Feliz.Lucide
 nuget Fable.ZipJs
 nuget Fable.SimpleXml
+nuget Fable.Promise
 
 github fable-compiler/fable-compiler.github.io:dev docs/scss/utilities.scss
 github fsprojects/Paket src/Paket.Core/Versioning/VersionRange.fs

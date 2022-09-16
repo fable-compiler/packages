@@ -1,6 +1,6 @@
-/// <summary>
-/// This namespace contains types that are composed of other types
-/// </summary>
+// <summary>
+// This namespace contains types that are composed of other types
+// </summary>
 namespace Fable.Packages.Types.CompositeTypes
 
 open Fable.Packages.Types

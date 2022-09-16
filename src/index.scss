@@ -9,6 +9,8 @@
 
 @import "./scss/custom_bulma_derived_variables.scss";
 $tabs-border-bottom-width: 2px;
+// Code blocks have strong shadow so we need to add some margin
+$content-block-margin-bottom: 1.25rem;
 
 @import "../node_modules/bulma/sass/utilities/_all.sass";
 @import "./../node_modules/bulma/bulma.sass";
@@ -185,7 +187,8 @@ input[type="radio"] {
 }
 
 .tab-body {
-    @include strong-shadow-box;
+    //@include strong-shadow-box;
+    box-shadow: unset;
     margin-top: 2rem;
 
     // Responsive margin

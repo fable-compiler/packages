@@ -1,5 +1,6 @@
 module Fable.Packages.Pages.PackageHome
 
+open Fable.Core
 open Feliz
 open Feliz.Bulma
 open Feliz.UseDeferred
@@ -16,10 +17,13 @@ open Thoth.Json
 open Fable.Core.JsInterop
 open Browser.Dom
 open Feliz.Lucide
+open Fable.ZipJs
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
 emitJsStatement () "import React from \"react\""
+
+let private zip: Zip = importAll "@zip.js/zip.js"
 
 type private DetailedError = {
     Error: string
@@ -29,6 +33,7 @@ type private DetailedError = {
 type private PackageFoundInfo = {
     Package: V3.SearchResponse.Package
     CatalogPage: V3.CatalogRoot.CatalogPage
+    Readme : string option
 }
 
 [<RequireQualifiedAccess>]
@@ -128,7 +133,7 @@ type Components with
             prop.className "tab-body box"
             prop.children [
                 match activeTab with
-                | Tab.Readme -> Components.Readme info.Package info.CatalogPage
+                | Tab.Readme -> Components.Readme info.Readme
                 | Tab.Dependencies ->
                     Components.Dependencies
                         info.Package
@@ -163,6 +168,73 @@ type Components with
     static member private Errored(message: string) =
         Components.AnErrorOccured("An unexpected error occured", message)
 
+/// <summary>
+/// Retrieve the README.md file content if present in the package
+/// </summary>
+/// <param name="entries"></param>
+/// <typeparam name="'a"></typeparam>
+/// <returns></returns>
+let private tryExtractReadme (entries : IEntry array) =
+    promise {
+        // Naive way to retrieve the readme file
+        // In the future, we should parse the nuspec file to retrieve the readme file
+        let readmeEntry =
+            entries
+            |> Array.tryFind (fun entry -> entry.filename.ToLowerInvariant() = "readme.md")
+
+        match readmeEntry with
+        | Some entry ->
+            let! content = entry.getDataString (zip.createStringWriter())
+            return Some content
+
+        | None -> return None
+    }
+
+let private fetchPackageContent
+    (packageId : string)
+    (packageVersion : string)
+    (catalogPage: V3.CatalogRoot.CatalogPage)
+    =
+    async {
+        match catalogPage.Items with
+        | Some packages ->
+            let packageContent =
+                packages
+                |> List.tryFind (fun package ->
+                    package.CatalogEntry.Version = packageVersion
+                )
+                |> Option.map (fun package -> package.PackageContent)
+
+            match packageContent with
+            | Some packageContent ->
+                let! response =
+                    Http.request packageContent
+                    |> Http.method GET
+                    |> Http.header (Headers.accept "application/json")
+                    |> Http.overrideResponseType ResponseTypes.Blob
+                    |> Http.send
+
+                match response.content with
+                | ResponseContent.Blob blob ->
+                    let zipReader = zip.createZipReader blob
+
+                    let! entries =
+                        zipReader.getEntries()
+                        |> Async.AwaitPromise
+
+                    let! readmeOpt = tryExtractReadme entries |> Async.AwaitPromise
+
+                    return Ok readmeOpt
+
+                | _ ->
+                    return failwith "Unexpected response content type"
+            | None ->
+                return Error $"Could not find package content URL for %s{packageId}@%s{packageVersion}"
+
+        | None ->
+            return Error "Missing catalog page items"
+    }
+
 let private fetchCatalogPage (catalogRootUrl: string) = async {
     let! response =
         Http.request catalogRootUrl
@@ -183,7 +255,7 @@ let private fetchCatalogPage (catalogRootUrl: string) = async {
     | Error errorMessage -> return Error errorMessage
 }
 
-let private fetchPackageInfo (packageId: string) : Async<DataStatus> = async {
+let private fetchPackageInfo (packageId: string) (packageVersion : string option) : Async<DataStatus> = async {
     let queryParams =
         [
             $"q=PackageId:\"%s{packageId}\"" // We want to only the Fable packages
@@ -196,7 +268,8 @@ let private fetchPackageInfo (packageId: string) : Async<DataStatus> = async {
         |> List.map window.encodeURI
         |> String.concat "&"
 
-    let requestUrl = $"https://azuresearch-usnc.nuget.org/query?%s{queryParams}"
+    let requestUrl =
+        $"https://azuresearch-usnc.nuget.org/query?%s{queryParams}"
 
     let! response =
         Http.request requestUrl
@@ -218,12 +291,24 @@ let private fetchPackageInfo (packageId: string) : Async<DataStatus> = async {
             | Some registrationUrl ->
                 match! fetchCatalogPage registrationUrl with
                 | Ok catalogPage ->
-                    let result = {
-                        Package = searchResponse.Data.Head
-                        CatalogPage = catalogPage
-                    }
+                    let requestedVersion =
+                        match packageVersion with
+                        | Some packageVersion -> packageVersion
+                        | None -> searchResponse.Data.Head.Version
+                    let! readmeResult = fetchPackageContent packageId requestedVersion catalogPage
 
-                    return DataStatus.PackageFound result
+                    match readmeResult with
+                    | Ok readmeOpt ->
+                        let result = {
+                            Package = searchResponse.Data.Head
+                            CatalogPage = catalogPage
+                            Readme = readmeOpt
+                        }
+
+                        return DataStatus.PackageFound result
+                    | Error errorMessage ->
+                        return DataStatus.Errored errorMessage
+
                 | Error errorMessage -> return DataStatus.Errored errorMessage
             | None ->
 
@@ -251,11 +336,12 @@ type Pages with
 
     [<ReactComponent>]
     static member PackageHome(parameters: Router.PackageParameters) =
-        let activeTab, setActiveTab = React.useState Tab.Readme
+        let activeTab, setActiveTab =
+            React.useState Tab.Readme
 
         let package =
             React.useDeferredNoCancel (
-                fetchPackageInfo parameters.PackageId,
+                fetchPackageInfo parameters.PackageId parameters.Version,
                 [|
                     parameters
                 |]

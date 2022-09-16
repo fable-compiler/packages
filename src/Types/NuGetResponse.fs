@@ -3,6 +3,8 @@ namespace rec Fable.Packages.Types
 open System
 open Thoth.Json
 
+#nowarn "40"
+
 type NuGetRegistration5Semver1 = {
     Id: string
     Type: string list

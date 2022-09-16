@@ -6,6 +6,10 @@ open Feliz.Bulma
 open Fable.Packages.Components
 open Fable.Packages.Components.NuGetPackageMedia
 open Fable.Packages.Types
+open Feliz.ReactMarkdown
+
+let private remarkGfm: obj =
+    import "default" "remark-gfm"
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -42,19 +46,52 @@ type Components with
         ]
 
     [<ReactComponent>]
-    static member PageHeader(package: V3.SearchResponse.Package) =
+    static member private Description(description: string option) =
+        let description =
+            description |> Option.defaultValue ""
 
+        Bulma.text.div [
+            text.hasTextCentered
+            spacing.mb4
+
+            prop.children [
+                ReactMarkdown.ReactMarkdown [
+                    reactMarkdown.children description
+                    reactMarkdown.remarkPlugins [|
+                        remarkGfm
+                    |]
+                ]
+            ]
+        ]
+
+    [<ReactComponent>]
+    static member private Tags(tags : (string list) option) =
+        match tags with
+        | None -> null
+        | Some tags ->
+            Bulma.tags [
+                helpers.isJustifyContentCenter
+
+                prop.children [
+                    for tag in tags do
+                        Html.a [
+                            prop.className "tag is-link is-primary is-light"
+                            prop.onClick (fun _ ->
+                                printfn "TODO: Implements search by tag"
+                            )
+                            prop.text tag
+                        ]
+                ]
+            ]
+
+    [<ReactComponent>]
+    static member PageHeader(package: V3.SearchResponse.Package) =
         Bulma.text.div [
             spacing.mb5
 
             prop.children [
                 Components.IconAndName package
-
-                Html.div [
-                    package.Description
-                    |> Option.defaultValue ""
-                    |> prop.text
-                ]
-
+                Components.Description package.Description
+                Components.Tags package.Tags
             ]
         ]

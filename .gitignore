@@ -226,3 +226,4 @@ __azurite*
 env
 docker-data-folder/
 CssModules.fs
+!.idea/.idea.Packages/.idea/indexLayout.xml

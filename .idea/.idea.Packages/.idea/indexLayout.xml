@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="UserContentModel">
+    <attachedFolders />
+    <explicitIncludes>
+      <Path>.editorconfig</Path>
+      <Path>.gitattributes</Path>
+      <Path>.gitignore</Path>
+      <Path>.gitpod.Dockerfile</Path>
+      <Path>.gitpod.yml</Path>
+      <Path>README.md</Path>
+      <Path>build.cmd</Path>
+      <Path>build.sh</Path>
+      <Path>build/paket.references</Path>
+      <Path>package-lock.json</Path>
+      <Path>package.json</Path>
+      <Path>paket.dependencies</Path>
+      <Path>paket.lock</Path>
+      <Path>src/Bindings/Glutinum.Feliz.ReactMarkdown/paket.references</Path>
+      <Path>src/index.scss</Path>
+      <Path>src/paket.references</Path>
+      <Path>src/scss</Path>
+      <Path>src/vite.config.ts</Path>
+    </explicitIncludes>
+    <explicitExcludes />
+  </component>
+</project>
