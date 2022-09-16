@@ -14,40 +14,46 @@ let srcPath = Path.getFullName "src"
 let main args =
     BuildTask.setupContextFromArgv args
 
-    let clean = BuildTask.create "Clean" [] {
-        [
-            srcPath </> "bin"
-            srcPath </> "obj"
-        ]
-        |> Shell.cleanDirs
+    let clean =
+        BuildTask.create "Clean" [] {
+            [
+                srcPath </> "bin"
+                srcPath </> "obj"
+            ]
+            |> Shell.cleanDirs
 
-        !! (Glob.fableJs srcPath)
-        |> Seq.iter Shell.rm
-    }
+            !!(Glob.fableJs srcPath) |> Seq.iter Shell.rm
+        }
 
-    let npmInstall = BuildTask.create "NpmInstall" [] {
-        run npm "install" cwd
-    }
+    let npmInstall = BuildTask.create "NpmInstall" [] { run npm "install" cwd }
 
-    let watch = BuildTask.create "Watch" [ npmInstall; clean ] {
-        // All for graceful shutdown on Ctrl+C while the processes are running
-        Console.CancelKeyPress.AddHandler(fun _ ea ->
-            ea.Cancel <- true
-            printfn "Received Ctrl+C, shutting down..."
-            Environment.Exit(0)
-        )
+    let watch =
+        BuildTask.create "Watch" [
+            npmInstall
+            clean
+        ] {
+            // All for graceful shutdown on Ctrl+C while the processes are running
+            Console.CancelKeyPress.AddHandler(fun _ ea ->
+                ea.Cancel <- true
+                printfn "Received Ctrl+C, shutting down..."
+                Environment.Exit(0)
+            )
 
-        [
-            "vite", npx "vite dev" srcPath
-            "fable", dotnet "fable --watch" srcPath
-        ]
-        |> runParallel
-    }
+            [
+                "vite", npx "vite dev" srcPath
+                "fable", dotnet "fable --watch" srcPath
+            ]
+            |> runParallel
+        }
 
-    let build = BuildTask.create "Build" [ npmInstall; clean ] {
-        run dotnet "fable" srcPath
-        run npx "vite build" srcPath
-    }
+    let build =
+        BuildTask.create "Build" [
+            npmInstall
+            clean
+        ] {
+            run dotnet "fable" srcPath
+            run npx "vite build" srcPath
+        }
 
     BuildTask.runOrList ()
     0

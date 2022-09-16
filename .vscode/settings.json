@@ -14,7 +14,7 @@
         "**/*.crswap": true,
         "**/fable_modules": true,
         "**/bin": true,
-        "**/dist": true,
+        "src/dist": true,
         "**/obj": true,
         "**/paket-files": true
     },

@@ -1,12 +1,10 @@
 namespace Fable.Packages.Types
 
-
 [<RequireQualifiedAccess>]
 type SortBy =
     | Relevance
     | Downloads
     | RecentlyUpdated
-
 
 module SortBy =
 

@@ -8,6 +8,7 @@
 @import "./../node_modules/bulma/sass/utilities/derived-variables";
 
 @import "./scss/custom_bulma_derived_variables.scss";
+$tabs-border-bottom-width: 2px;
 
 @import "../node_modules/bulma/sass/utilities/_all.sass";
 @import "./../node_modules/bulma/bulma.sass";
@@ -153,5 +154,70 @@ input[type="radio"] {
             display: flex;
         }
     }
+}
 
+.package-home-tabs {
+
+    @include until(500px) {
+        .tabs ul {
+            flex-direction: column;
+
+            li {
+                width: 100%;
+            }
+        }
+    }
+
+
+    .tabs ul {
+        flex-shrink: 1;
+        flex-wrap: wrap;
+        border-bottom-color: transparent;
+    }
+
+}
+
+.tabs {
+    li.is-active a {
+        font-weight: $weight-bold;
+        color: inherit;
+    }
+}
+
+.tab-body {
+    @include strong-shadow-box;
+    margin-top: 2rem;
+
+    // Responsive margin
+    // @include desktop {
+    //     margin-left: 10rem;
+    //     margin-right: 10rem;
+    // }
+
+    // @include tablet {
+    //     // margin-left: 12rem;
+    //     // margin-right: 12rem;
+    //     margin-left: clamp(3rem, 20%, 14rem);
+    //     margin-right: clamp(3rem, 20%, 14rem);
+    // }
+
+    // @include mobile {
+    //     margin-left: 0;
+    //     margin-right: 0;
+    // }
+
+    // @include mobile {
+    //     margin-left: 0;
+    //     margin-right: 0;
+    // }
+
+    // @include touch {
+    //     margin-left: 7rem;
+    //     margin-right: 7rem;
+    // }
+
+    // @include desktop {
+    //     margin-left: 7rem;
+    //     margin-right: 7rem;
+    // }
 }

@@ -6,9 +6,7 @@ module Cmd =
 
     module OfFunc =
 
-        let exec
-            (task: 'a -> _)
-            (arg: 'a) : Cmd<'msg> =
+        let exec (task: 'a -> _) (arg: 'a) : Cmd<'msg> =
 
             let bind _dispatch =
                 try
@@ -16,4 +14,6 @@ module Cmd =
                 with x ->
                     ()
 
-            [ bind ]
+            [
+                bind
+            ]

@@ -36,7 +36,10 @@ let NuGetRegistration5Semver1CacheProvider (children: ReactElement) =
         AddOrUpdateMany =
             fun data ->
                 setCache (fun oldCache ->
-                    data |> List.fold (fun acc data -> Map.add data.Id data acc) oldCache
+                    data
+                    |> List.fold
+                        (fun acc data -> Map.add data.Id data acc)
+                        oldCache
                 )
     }
 

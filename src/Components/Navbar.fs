@@ -14,7 +14,7 @@ emitJsStatement () "import React from \"react\""
 type Components with
 
     [<ReactComponent>]
-    static member Navbar () =
+    static member Navbar() =
         Html.nav [
             prop.classes [
                 "navbar"
@@ -101,19 +101,23 @@ type Components with
                                                             svg.cx 2
                                                             svg.cy 2
                                                             svg.r 2
-                                                            svg.transform.translate (
-                                                                9,
-                                                                0
-                                                            )
+                                                            svg
+                                                                .transform
+                                                                .translate (
+                                                                    9,
+                                                                    0
+                                                                )
                                                         ]
                                                         Svg.circle [
                                                             svg.cx 2
                                                             svg.cy 2
                                                             svg.r 2
-                                                            svg.transform.translate (
-                                                                18,
-                                                                0
-                                                            )
+                                                            svg
+                                                                .transform
+                                                                .translate (
+                                                                    18,
+                                                                    0
+                                                                )
                                                         ]
                                                     ]
                                                 ]
@@ -237,7 +241,8 @@ type Components with
                                 ]
                                 Html.a [
                                     prop.className "nacara-navbar-menu-item"
-                                    prop.href "https://twitter.com/FableCompiler"
+                                    prop.href
+                                        "https://twitter.com/FableCompiler"
                                     prop.text "Twitter"
                                 ]
                                 Html.a [

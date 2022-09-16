@@ -11,7 +11,14 @@ module Array
 /// <returns>
 /// A tuple with both resulting arrays.
 /// </returns>
-let partitionMap (mapper: 'T -> Choice<'T1,'T2>) (source: array<'T>) =
-    let (x, y) = ResizeArray (), ResizeArray ()
-    Array.iter (mapper >> function Choice1Of2 e -> x.Add e | Choice2Of2 e -> y.Add e) source
-    x.ToArray (), y.ToArray ()
+let partitionMap (mapper: 'T -> Choice<'T1, 'T2>) (source: array<'T>) =
+    let (x, y) = ResizeArray(), ResizeArray()
+
+    Array.iter
+        (mapper
+         >> function
+             | Choice1Of2 e -> x.Add e
+             | Choice2Of2 e -> y.Add e)
+        source
+
+    x.ToArray(), y.ToArray()

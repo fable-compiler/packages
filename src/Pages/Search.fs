@@ -4,6 +4,7 @@ open Feliz
 open Feliz.Bulma
 open Feliz.UseDeferred
 open Fable.Packages.Types
+open Fable.Packages.Types.CompositeTypes
 open Fable.Packages.Components
 open Fable.Packages.Components.SearchForm
 open Fable.Packages.Components.Pagination
@@ -82,7 +83,7 @@ type Components with
         let matchedPackages, setMatchedPackages = React.useState (ResizeArray())
 
         let onSearch =
-            React.useCallbackRef(fun (newSearchOptions: SearchOptions) ->
+            React.useCallbackRef (fun (newSearchOptions: SearchOptions) ->
                 if newSearchOptions <> activeSearchOptions then
                     // Reset the current page
                     setCurrentPage 0
@@ -99,17 +100,24 @@ type Components with
                         filterByPackageTypes activeSearchOptions.PackageTypes
                     )
                     // Filter by target
-                    |> Seq.filter (
-                        filterByTargets activeSearchOptions.Targets
-                    )
+                    |> Seq.filter (filterByTargets activeSearchOptions.Targets)
                     |> Seq.sortWith (fun packageA packageB ->
                         match activeSearchOptions.SortBy with
                         | SortBy.Relevance ->
-                            compare packageA.Package.TotalDownloads packageB.Package.TotalDownloads * -1
+                            compare
+                                packageA.Package.TotalDownloads
+                                packageB.Package.TotalDownloads
+                            * -1
                         | SortBy.Downloads ->
-                            compare packageA.Package.TotalDownloads packageB.Package.TotalDownloads * -1
+                            compare
+                                packageA.Package.TotalDownloads
+                                packageB.Package.TotalDownloads
+                            * -1
                         | SortBy.RecentlyUpdated ->
-                            compare packageA.LastVersionInfo.Published packageB.LastVersionInfo.Published * -1
+                            compare
+                                packageA.LastVersionInfo.Published
+                                packageB.LastVersionInfo.Published
+                            * -1
                     )
                     |> ResizeArray
 

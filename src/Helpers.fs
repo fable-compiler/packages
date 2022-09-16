@@ -8,6 +8,4 @@ module JS =
         emitJsExpr num "$0.toLocaleString()"
 
 let computateTotalPageCount (totalHits: int) (elementsPerPage: int) : int =
-    float totalHits / float elementsPerPage
-    |> System.Math.Ceiling
-    |> int
+    float totalHits / float elementsPerPage |> System.Math.Ceiling |> int

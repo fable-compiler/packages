@@ -11,11 +11,13 @@ module List
 /// <returns>
 /// A tuple with both resulting lists.
 /// </returns>
-let partitionMap (mapping: 'T -> Choice<'T1,'T2>) (source: list<'T>) =
-    let rec loop ((acc1, acc2) as acc) = function
+let partitionMap (mapping: 'T -> Choice<'T1, 'T2>) (source: list<'T>) =
+    let rec loop ((acc1, acc2) as acc) =
+        function
         | [] -> acc
-        | x::xs ->
+        | x :: xs ->
             match mapping x with
-            | Choice1Of2 x -> loop (x::acc1, acc2) xs
-            | Choice2Of2 x -> loop (acc1, x::acc2) xs
+            | Choice1Of2 x -> loop (x :: acc1, acc2) xs
+            | Choice2Of2 x -> loop (acc1, x :: acc2) xs
+
     loop ([], []) (List.rev source)

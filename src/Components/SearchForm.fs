@@ -61,8 +61,7 @@ let private update (onSearch: SearchOptions -> unit) (msg: Msg) (model: Model) =
 
         newModel, Cmd.OfFunc.exec onSearch newModel
 
-    | Search ->
-        model, Cmd.OfFunc.exec onSearch model
+    | Search -> model, Cmd.OfFunc.exec onSearch model
 
 type SearchFormProps = {| OnSearch: SearchOptions -> unit |}
 
@@ -126,7 +125,7 @@ type Components with
         Components.CheckboxField(
             Target.toLabel target,
             isChecked,
-            fun () -> dispatch (ToggleTarget target)
+            (fun () -> dispatch (ToggleTarget target))
         )
 
     [<ReactComponent>]
@@ -172,7 +171,7 @@ type Components with
         Components.CheckboxField(
             NuGetOption.toLabel option,
             isChecked,
-            fun () -> dispatch (ToggleOption option)
+            (fun () -> dispatch (ToggleOption option))
         )
 
     [<ReactComponent>]

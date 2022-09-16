@@ -5,6 +5,7 @@ open Feliz
 open Feliz.Bulma
 open Feliz.UseDeferred
 open Fable.Packages.Types
+open Fable.Packages.Types.CompositeTypes
 open Fable.SimpleHttp
 open Thoth.Json
 open Browser.Dom
@@ -16,7 +17,7 @@ emitJsStatement () "import React from \"react\""
 [<RequireQualifiedAccess>]
 type private Step =
     | IndexingPackageList
-    | IndexingLastPackageVersion of packages: NuGetPackage list
+    | IndexingLastPackageVersion of packages: V3.SearchResponse.Package list
 
 type private IndexingProgress = {
     CurrentPage: int
@@ -25,11 +26,11 @@ type private IndexingProgress = {
 
 [<RequireQualifiedAccess>]
 type private FetchPageResult =
-    | Success of NuGetPackage list
+    | Success of V3.SearchResponse.Package list
     | DeserializationError of string
     | MaximumPackagesReached
 
-type SearchIndexingProps = {| OnReady: NuGetPackage list -> unit |}
+type SearchIndexingProps = {| OnReady: V3.SearchResponse.Package list -> unit |}
 
 type Components with
 
@@ -52,7 +53,7 @@ type Components with
 
     [<ReactComponent>]
     static member private IndexingLastPackageVersion
-        (packages: NuGetPackage list)
+        (packages: V3.SearchResponse.Package list)
         (onCompleted: IndexedNuGetPackage list -> unit)
         =
         // In the future, we could use a web worker to cache previous request result
@@ -71,6 +72,7 @@ type Components with
 
         let task = async {
             let start = System.DateTime.Now
+
             let batches =
                 packages
                 |> Seq.chunkBySize chunkSize
@@ -136,7 +138,7 @@ type Components with
                         // TODO: Inform user of potential errors and so missing packages
                         console.error error
 
-            let finish  = System.DateTime.Now
+            let finish = System.DateTime.Now
             let elapsed = finish - start
             printfn "Elapsed: %A" elapsed.TotalSeconds
             onCompleted (Seq.toList indexedPackages)
@@ -219,7 +221,7 @@ type Components with
     /// <param name="onReady"></param>
     /// <returns></returns>
     [<ReactComponent>]
-    static member IndexingPackageList(onCompleted: NuGetPackage list -> unit) =
+    static member IndexingPackageList(onCompleted: V3.SearchResponse.Package list -> unit) =
         // At the time of writting there are around 350 pacakges
         // tagged with `fable` using 50 elements per page means
         // we will have to make 7 requests to get all the packages
@@ -273,10 +275,10 @@ type Components with
                 |> Http.header (Headers.accept "application/json")
                 |> Http.send
 
-            return Decode.fromString NuGetResponse.decoder response.responseText
+            return Decode.fromString V3.SearchResponse.decoder response.responseText
         }
 
-        let rec fetchAllPages (currentPage: int) (packages: NuGetPackage list) = async {
+        let rec fetchAllPages (currentPage: int) (packages: V3.SearchResponse.Package list) = async {
             let! currentPageResult = fetchPage currentPage
 
             match currentPageResult with
@@ -343,7 +345,7 @@ type Components with
         let currentStep, setCurrentStep =
             React.useState Step.IndexingPackageList
 
-        let onIndexingPackageListCompleted (packages: NuGetPackage list) =
+        let onIndexingPackageListCompleted (packages: V3.SearchResponse.Package list) =
             setCurrentStep (Step.IndexingLastPackageVersion packages)
 
         let onIndexingLastPackageVersionCompleted

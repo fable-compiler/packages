@@ -9,6 +9,7 @@ open Fable.Packages.Components.Navbar
 open Fable.Packages.Pages
 open Fable.Packages.Pages.Search
 open Fable.Packages.Pages.NotFound
+open Fable.Packages.Pages.PackageHome
 
 importSideEffects "./index.scss"
 
@@ -25,7 +26,7 @@ let App () =
         match page with
         | Router.Page.Search -> Pages.Search()
 
-        | Router.Page.Package packageName -> Html.div packageName
+        | Router.Page.Package parameters -> Pages.PackageHome parameters
 
         | Router.Page.NotFound -> Pages.NotFound()
 

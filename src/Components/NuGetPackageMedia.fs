@@ -38,7 +38,7 @@ type Components with
         | None -> null
 
     [<ReactComponent>]
-    static member private NuGetPackageIcon(iconUrl: string option) =
+    static member NuGetPackageIcon(iconUrl: string option) =
         let handledIconImgError, setHandledIconImgError = React.useState false
 
         let iconUrl =
@@ -68,7 +68,9 @@ type Components with
         ]
 
     [<ReactComponent>]
-    static member private NuGetPackageSummary(package: NuGetPackage) =
+    static member private NuGetPackageSummary
+        (package: V3.SearchResponse.Package)
+        =
         // Compute the NuGet package URL
         // There doesn't seems to be a field containing this information
         let nugetPackageUrl = $"https://www.nuget.org/packages/%s{package.Id}"
@@ -81,7 +83,14 @@ type Components with
                     prop.className "title is-4"
                     prop.children [
                         Html.a [
-                            prop.href (Router.toUrl (Router.Page.Package package.Id))
+                            prop.href (
+                                ({
+                                    PackageId = package.Id
+                                    Version = None
+                                }: Router.PackageParameters)
+                                |> Router.Page.Package
+                                |> Router.toUrl
+                            )
                             prop.text package.Id
                         ]
                         Html.span [
@@ -151,7 +160,9 @@ type Components with
         ]
 
     [<ReactComponent>]
-    static member private NuGetPackageStatistics(package: NuGetPackage) =
+    static member private NuGetPackageStatistics
+        (package: V3.SearchResponse.Package)
+        =
 
         let fetchRegistrationInfo = async {
             let packageRegistrationUrl =
@@ -198,7 +209,9 @@ type Components with
                 | Some totalDownloads ->
                     Components.StatisticsRow
                         "fas fa-download"
-                        (Helpers.JS.formatNumberToLocalString (float totalDownloads))
+                        (Helpers.JS.formatNumberToLocalString (
+                            float totalDownloads
+                        ))
                 | None -> null
 
                 match registrationInfo with
@@ -218,12 +231,14 @@ type Components with
 
                 | Deferred.Failed _
                 | Deferred.Resolved (Error _) ->
-                    Components.StatisticsRow "fas fa-history" "Failed to retrieve"
+                    Components.StatisticsRow
+                        "fas fa-history"
+                        "Failed to retrieve"
             ]
         ]
 
     [<ReactComponent>]
-    static member NuGetPackageMedia(package: NuGetPackage) =
+    static member NuGetPackageMedia(package: V3.SearchResponse.Package) =
 
         Bulma.media [
             prop.key package.Id

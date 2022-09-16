@@ -15,8 +15,12 @@ nuget Fable.SimpleHttp
 nuget Thoth.Json
 nuget Fable.DateFunctions
 nuget Feliz.Router
+nuget Glutinum.Feliz.Lucide
+nuget Fable.ZipJs
+nuget Fable.SimpleXml
 
 github fable-compiler/fable-compiler.github.io:dev docs/scss/utilities.scss
+github fsprojects/Paket src/Paket.Core/Versioning/VersionRange.fs
 
 group Build
     source https://api.nuget.org/v3/index.json

@@ -28,9 +28,7 @@ module ReactHookExtensions =
             }
 
             React.useEffect (
-                (fun () ->
-                    Async.StartImmediate(executeOperation ())
-                ),
+                (fun () -> Async.StartImmediate(executeOperation ())),
                 dependencies
             )
 

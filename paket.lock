@@ -2,7 +2,7 @@ STORAGE: NONE
 RESTRICTION: == net6.0
 NUGET
   remote: https://api.nuget.org/v3/index.json
-    Fable.AST (3.1.1)
+    Fable.AST (4.2)
     Fable.Browser.Blob (1.2)
       Fable.Core (>= 3.0)
       FSharp.Core (>= 4.7.2)
@@ -35,6 +35,9 @@ NUGET
     Fable.Elmish (3.1)
       Fable.Core (>= 3.0)
       FSharp.Core (>= 4.6.2)
+    Fable.Parsimmon (4.1)
+      Fable.Core (>= 3.0)
+      FSharp.Core (>= 4.6.2)
     Fable.React (8.0.1)
       Fable.Browser.Dom (>= 2.4.4)
       Fable.Core (>= 3.2.7)
@@ -44,12 +47,20 @@ NUGET
       Fable.Browser.XMLHttpRequest (>= 1.1)
       Fable.Core (>= 3.0)
       FSharp.Core (>= 4.6.2)
+    Fable.SimpleXml (3.3)
+      Fable.Core (>= 3.0)
+      Fable.Parsimmon (>= 4.1)
+      FSharp.Core (>= 4.6.2)
+    Fable.ZipJs (2.0.1)
+      Fable.Browser.Blob (>= 1.2)
+      Fable.Core (>= 3.2.9)
+      FSharp.Core (>= 4.7.2)
     Feliz (1.68)
       Fable.Core (>= 3.1.5)
       Fable.React (>= 7.4)
       Feliz.CompilerPlugins (>= 1.10)
       FSharp.Core (>= 4.7.2)
-    Feliz.Bulma (2.18)
+    Feliz.Bulma (2.19)
       Feliz (>= 1.32)
       FSharp.Core (>= 4.7.2)
     Feliz.CompilerPlugins (1.10)
@@ -69,12 +80,19 @@ NUGET
       Feliz (>= 1.17 < 2.0)
       FSharp.Core (>= 4.7.2)
     FSharp.Core (6.0.6)
+    Glutinum.Feliz.Lucide (1.0.1)
+      Fable.Core (>= 3.7.1)
+      Fable.React (>= 8.0.1 < 9.0)
+      Feliz (>= 1.68)
+      FSharp.Core (>= 6.0.6)
     Thoth.Json (7.0)
       Fable.Core (>= 3.1.6)
       FSharp.Core (>= 4.7.2)
 GITHUB
   remote: fable-compiler/fable-compiler.github.io
     docs/scss/utilities.scss (e4229259595d6aa610ebac9a71b937943a2a946a)
+  remote: fsprojects/Paket
+    src/Paket.Core/Versioning/VersionRange.fs (eac93a466a2ed15c5b8bae3ad00e41d1dabc68f2)
 GROUP Build
 STORAGE: NONE
 RESTRICTION: == net6.0
