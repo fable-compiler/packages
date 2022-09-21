@@ -21,6 +21,7 @@ open Feliz.Lucide
 open Fable.ZipJs
 open Fable.SimpleXml
 open FsToolkit.ErrorHandling
+open FSharp.Control
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -35,7 +36,7 @@ type private DetailedError = {
 
 type private PackageFoundInfo = {
     Package: V3.SearchResponse.Package
-    CatalogPage: V3.CatalogRoot.CatalogPage
+    Versions: V3.CatalogRoot.CatalogPage.Package list
     Readme: string option
     ReleaseNotes: string option
 }
@@ -151,11 +152,7 @@ type Components with
                                 activeTab,
                                 setActiveTab
                             )
-                            Components.Tab(
-                                Tab.License,
-                                activeTab,
-                                setActiveTab
-                            )
+                            Components.Tab(Tab.License, activeTab, setActiveTab)
                         ]
                     ]
                 ]
@@ -172,13 +169,11 @@ type Components with
                 | Tab.Dependencies ->
                     Components.Dependencies
                         info.Package
-                        info.CatalogPage
+                        info.Versions
                         info.Package.Version
-                | Tab.Versions ->
-                    Components.Versions info.Package info.CatalogPage
+                | Tab.Versions -> Components.Versions info.Package info.Versions
                 | Tab.ReleaseNotes -> Components.ReleaseNotes info.ReleaseNotes
-                | Tab.License ->
-                    Html.div "Components.License info.Package"
+                | Tab.License -> Html.div "Components.License info.Package"
             ]
         ]
 
@@ -219,9 +214,7 @@ let private tryExtractReleaseNotes (entries: IEntry array) = promise {
             |> SimpleXml.tryFindElementByName "metadata"
             |> Option.map (SimpleXml.tryFindElementByName "releaseNotes")
             |> Option.flatten
-            |> Option.map (fun xmlElement ->
-                xmlElement.Content
-            )
+            |> Option.map (fun xmlElement -> xmlElement.Content)
 
         return releaseNotes
     | None -> return None
@@ -253,62 +246,110 @@ let private tryExtractReadme (entries: IEntry array) = promise {
 let private fetchPackageContent
     (packageId: string)
     (packageVersion: string)
-    (catalogPage: V3.CatalogRoot.CatalogPage)
+    (versions: V3.CatalogRoot.CatalogPage.Package list)
     =
     async {
-        match catalogPage.Items with
-        | Some packages ->
-            let packageContent =
-                packages
-                |> List.tryFind (fun package ->
-                    package.CatalogEntry.Version = packageVersion
-                )
-                |> Option.map (fun package -> package.PackageContent)
+        let packageContent =
+            versions
+            |> List.tryFind (fun package ->
+                package.CatalogEntry.Version = packageVersion
+            )
+            |> Option.map (fun package -> package.PackageContent)
 
-            match packageContent with
-            | Some packageContent ->
-                let! response =
-                    Http.request packageContent
-                    |> Http.method GET
-                    |> Http.header (Headers.accept "application/json")
-                    |> Http.overrideResponseType ResponseTypes.Blob
-                    |> Http.send
+        match packageContent with
+        | Some packageContent ->
+            let! response =
+                Http.request packageContent
+                |> Http.method GET
+                |> Http.header (Headers.accept "application/json")
+                |> Http.overrideResponseType ResponseTypes.Blob
+                |> Http.send
 
-                match response.content with
-                | ResponseContent.Blob blob ->
-                    let zipReader = zip.createZipReader blob
+            match response.content with
+            | ResponseContent.Blob blob ->
+                let zipReader = zip.createZipReader blob
 
-                    let! entries = zipReader.getEntries () |> Async.AwaitPromise
+                let! entries = zipReader.getEntries () |> Async.AwaitPromise
 
-                    return Ok entries
+                return Ok entries
 
-                | _ -> return failwith "Unexpected response content type"
-            | None ->
-                return
-                    Error
-                        $"Could not find package content URL for %s{packageId}@%s{packageVersion}"
-
-        | None -> return Error "Missing catalog page items"
+            | _ -> return failwith "Unexpected response content type"
+        | None ->
+            return
+                Error
+                    $"Could not find package content URL for %s{packageId}@%s{packageVersion}"
     }
 
-let private fetchCatalogPage (catalogRootUrl: string) = async {
+let private fetchVersions (url: string) = asyncResult {
+    let! response =
+        Http.request url
+        |> Http.method GET
+        |> Http.header (Headers.accept "application/json")
+        |> Http.send
+
+    let! catalogPage =
+        Decode.fromString
+            V3.CatalogRoot.CatalogPage.decoder
+            response.responseText
+        |> Result.mapError (fun errorMessage ->
+            [
+                "Error while decoding the search response JSON"
+                ""
+                errorMessage
+            ]
+            |> String.concat "\n"
+        )
+
+    let versions =
+        catalogPage.Items
+        |> Option.defaultValue []
+
+    return versions
+}
+
+let private fetchAllVersions (pages: V3.CatalogRoot.CatalogPage list) = asyncSeq {
+    for page in pages do
+        let! versions = fetchVersions page.Id
+
+        yield versions
+}
+
+let private fetchCatalogPage (catalogRootUrl: string) = asyncResult {
     let! response =
         Http.request catalogRootUrl
         |> Http.method GET
         |> Http.header (Headers.accept "application/json")
         |> Http.send
 
-    let jsonResponse =
+    let! catalogRoot =
         Decode.fromString V3.CatalogRoot.decoder response.responseText
+        |> Result.mapError (fun errorMessage ->
+            [
+                "Error while decoding the search response JSON"
+                ""
+                errorMessage
+            ]
+            |> String.concat "\n"
+        )
 
-    match jsonResponse with
-    | Ok catalogRoot ->
-        if catalogRoot.Count = 1 then
-            return Ok catalogRoot.Items.Head
-        else
-            return failwith "Catalog root should have only one item"
+    // Should not happen because there are not elements it probably means
+    // that the package doesn't exist
+    if catalogRoot.Count = 0 then
+        return! Error "No catalog page found"
+    // If there is only one element, we can return it directly
+    else if catalogRoot.Count = 1 then
+        return catalogRoot.Items.Head.Items |> Option.defaultValue []
+    else
+        // If there are more than one element, we need to fetch each page
+        // individually and merge them
 
-    | Error errorMessage -> return Error errorMessage
+        // Each page contains up to 64 elements
+        let allVersions = ResizeArray(64 * catalogRoot.Items.Length)
+
+        for batch in fetchAllVersions catalogRoot.Items do
+            allVersions.AddRange batch
+
+        return Seq.toList allVersions
 }
 
 let private fetchPackageInfo
@@ -358,7 +399,7 @@ let private fetchPackageInfo
                 | Some registrationUrl -> Ok registrationUrl
                 | None -> Error "Missing registration URL"
 
-        let! catalogPage = fetchCatalogPage registrationUrl
+        let! allPackageVersions = fetchCatalogPage registrationUrl
 
         let requestedVersion =
             match packageVersion with
@@ -366,7 +407,7 @@ let private fetchPackageInfo
             | None -> searchResponse.Data.Head.Version
 
         let! packageContent =
-            fetchPackageContent packageId requestedVersion catalogPage
+            fetchPackageContent packageId requestedVersion allPackageVersions
 
         let! readmeOpt = tryExtractReadme packageContent |> Async.AwaitPromise
 
@@ -375,7 +416,7 @@ let private fetchPackageInfo
 
         return {
             Package = searchResponse.Data.Head
-            CatalogPage = catalogPage
+            Versions = allPackageVersions
             Readme = readmeOpt
             ReleaseNotes = releaseNoteOpt
         }
@@ -412,7 +453,7 @@ type Pages with
         match package with
         | Deferred.HasNotStartedYet -> Html.none
         | Deferred.InProgress -> Components.Loading()
-        | Deferred.Failed _ -> Html.text "Failed"
+        | Deferred.Failed reason -> Html.text reason.Message
 
         // | Deferred.Resolved DataStatus.PackageNotFound ->
         //     Components.PackageNotFound props.PackageId

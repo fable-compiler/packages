@@ -17,91 +17,87 @@ type Components with
     [<ReactComponent>]
     static member Versions
         (nugetPackage: V3.SearchResponse.Package)
-        (catalogPage: V3.CatalogRoot.CatalogPage)
+        (versions: V3.CatalogRoot.CatalogPage.Package list)
         =
-        match catalogPage.Items with
-        | Some packages ->
-            let packages =
-                packages
-                |> List.sortByDescending (fun package ->
-                    package.CatalogEntry.Published
-                )
+        let packages =
+            versions
+            |> List.sortByDescending (fun package ->
+                package.CatalogEntry.Published
+            )
 
-            Bulma.tableContainer [
-                Bulma.table [
-                    table.isFullWidth
+        Bulma.tableContainer [
+            Bulma.table [
+                table.isFullWidth
 
-                    prop.children [
-                        Html.thead [
-                            Html.tr [
-                                Html.th "Version"
-                                Html.th "Downloads"
-                                Html.th "Last updated"
-                            ]
+                prop.children [
+                    Html.thead [
+                        Html.tr [
+                            Html.th "Version"
+                            Html.th "Downloads"
+                            Html.th "Last updated"
                         ]
+                    ]
 
-                        Html.tbody [
-                            for package in packages do
-                                let isListed =
-                                    match package.CatalogEntry.Listed with
-                                    | Some true
-                                    | None -> true
-                                    | Some false -> false
+                    Html.tbody [
+                        for package in packages do
+                            let isListed =
+                                match package.CatalogEntry.Listed with
+                                | Some true
+                                | None -> true
+                                | Some false -> false
 
-                                if isListed then
+                            if isListed then
 
-                                    let publishedText =
-                                        package.CatalogEntry.Published
-                                        |> Option.map (fun date ->
-                                            date.FormatDistance(
-                                                System.DateTime.UtcNow
-                                            )
-                                            |> Html.text
+                                let publishedText =
+                                    package.CatalogEntry.Published
+                                    |> Option.map (fun date ->
+                                        date.FormatDistance(
+                                            System.DateTime.UtcNow
                                         )
-                                        |> Option.defaultValue null
+                                        |> Html.text
+                                    )
+                                    |> Option.defaultValue null
 
-                                    let downloadCount =
-                                        nugetPackage.Versions
-                                        |> List.tryFind (fun version ->
-                                            version.Version = package.CatalogEntry.Version
-                                        )
-                                        |> Option.map (fun version ->
-                                            Html.text version.Downloads
-                                        )
-                                        |> Option.defaultValue null
+                                let downloadCount =
+                                    nugetPackage.Versions
+                                    |> List.tryFind (fun version ->
+                                        version.Version = package.CatalogEntry.Version
+                                    )
+                                    |> Option.map (fun version ->
+                                        Html.text version.Downloads
+                                    )
+                                    |> Option.defaultValue null
 
-                                    let packageUrl =
-                                        ({
-                                            PackageId = nugetPackage.Id
-                                            Version = Some package.CatalogEntry.Version
-                                        } : Router.PackageParameters)
-                                        |> Router.Page.Package
-                                        |> Router.toUrl
+                                let packageUrl =
+                                    ({
+                                        PackageId = nugetPackage.Id
+                                        Version = Some package.CatalogEntry.Version
+                                    } : Router.PackageParameters)
+                                    |> Router.Page.Package
+                                    |> Router.toUrl
 
-                                    Html.tr [
-                                        Html.td [
-                                            Html.a [
-                                                prop.href packageUrl
-                                                prop.children [
-                                                    Html.text
-                                                        package.CatalogEntry.Version
-                                                ]
+                                Html.tr [
+                                    Html.td [
+                                        Html.a [
+                                            prop.href packageUrl
+                                            prop.children [
+                                                Html.text
+                                                    package.CatalogEntry.Version
                                             ]
                                         ]
-                                        Html.td [
-                                            downloadCount
-                                        ]
-                                        Html.td [
-                                            publishedText
-                                        ]
                                     ]
+                                    Html.td [
+                                        downloadCount
+                                    ]
+                                    Html.td [
+                                        publishedText
+                                    ]
+                                ]
 
-                                else
-                                    null
+                            else
+                                null
 
-                        ]
                     ]
                 ]
             ]
-
-        | None -> Html.text "Missing packages information in the catalog page"
+        ]

@@ -81,34 +81,31 @@ type Components with
     [<ReactComponent>]
     static member Dependencies
         (nugetPackage: V3.SearchResponse.Package)
-        (catalogPage: V3.CatalogRoot.CatalogPage)
+        (versions: V3.CatalogRoot.CatalogPage.Package list)
         (version: string)
         =
-        match catalogPage.Items with
-        | Some packages ->
-            let packageInfo =
-                packages
-                |> List.tryFind (fun package ->
-                    package.CatalogEntry.Version = version
-                )
 
-            match packageInfo with
-            | Some packageInfo ->
-                match packageInfo.CatalogEntry.DependencyGroups with
-                | Some dependencyGroups ->
-                    Html.div [
-                        for dependencyGroup in dependencyGroups do
-                            Components.DependencyGroup dependencyGroup
-                    ]
+        let packageInfo =
+            versions
+            |> List.tryFind (fun package ->
+                package.CatalogEntry.Version = version
+            )
 
-                | None ->
-                    Bulma.text.div [
-                        color.hasTextGrey
-                        prop.text "No dependencies"
-                    ]
+        match packageInfo with
+        | Some packageInfo ->
+            match packageInfo.CatalogEntry.DependencyGroups with
+            | Some dependencyGroups ->
+                Html.div [
+                    for dependencyGroup in dependencyGroups do
+                        Components.DependencyGroup dependencyGroup
+                ]
 
             | None ->
-                Html.text
-                    "Could not find the requested version in the catalog entry"
+                Bulma.text.div [
+                    color.hasTextGrey
+                    prop.text "No dependencies"
+                ]
 
-        | None -> Html.text "Missing packages information in the catalog page"
+        | None ->
+            Html.text
+                "Could not find the requested version in the catalog entry"

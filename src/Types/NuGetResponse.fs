@@ -169,6 +169,7 @@ module V3 =
             )
 
         type CatalogPage = {
+            Id : string
             Count: int
             Items: (CatalogPage.Package list) option
             Parent: string option
@@ -180,6 +181,7 @@ module V3 =
 
             let decoder: Decoder<CatalogPage> =
                 Decode.object (fun get -> {
+                    Id = get.Required.Field "@id" Decode.string
                     Count = get.Required.Field "count" Decode.int
                     Items =
                         get.Optional.Field "items" (Decode.list Package.decoder)

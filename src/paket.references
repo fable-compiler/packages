@@ -12,3 +12,4 @@ Fable.ZipJs
 Fable.SimpleXml
 Fable.Promise
 FsToolkit.ErrorHandling
+FsToolkit.ErrorHandling.AsyncSeq

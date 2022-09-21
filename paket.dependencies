@@ -20,6 +20,7 @@ nuget Fable.ZipJs
 nuget Fable.SimpleXml
 nuget Fable.Promise
 nuget FsToolkit.ErrorHandling
+nuget FsToolkit.ErrorHandling.AsyncSeq
 
 github fable-compiler/fable-compiler.github.io:dev docs/scss/utilities.scss
 github fsprojects/Paket src/Paket.Core/Versioning/VersionRange.fs
