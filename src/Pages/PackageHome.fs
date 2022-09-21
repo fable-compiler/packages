@@ -13,6 +13,7 @@ open Fable.Packages.Components.PackageHome.Versions
 open Fable.Packages.Components.PackageHome.Dependencies
 open Fable.Packages.Components.PackageHome.Readme
 open Fable.Packages.Components.PackageHome.ReleaseNotes
+open Fable.Packages.Components.PackageHome.License
 open Fable.SimpleHttp
 open Thoth.Json
 open Fable.Core.JsInterop
@@ -39,6 +40,7 @@ type private PackageFoundInfo = {
     Versions: V3.CatalogRoot.CatalogPage.Package list
     Readme: string option
     ReleaseNotes: string option
+    License : LicenseType option
 }
 
 [<RequireQualifiedAccess>]
@@ -173,7 +175,8 @@ type Components with
                         info.Package.Version
                 | Tab.Versions -> Components.Versions info.Package info.Versions
                 | Tab.ReleaseNotes -> Components.ReleaseNotes info.ReleaseNotes
-                | Tab.License -> Html.div "Components.License info.Package"
+                | Tab.License ->
+                    Components.License info.License
             ]
         ]
 
@@ -205,8 +208,7 @@ let private tryExtractReleaseNotes (entries: IEntry array) = promise {
     match nuspecEntry with
     | Some nuspecEntry ->
         let! content = nuspecEntry.getDataString (zip.createStringWriter ())
-        // Wait for a fix from Fable.SimpleXml
-        // See: https://github.com/Zaid-Ajaj/Fable.SimpleXml/issues/39
+
         let xmlDocument = SimpleXml.parseDocument content
 
         let releaseNotes =
@@ -217,6 +219,85 @@ let private tryExtractReleaseNotes (entries: IEntry array) = promise {
             |> Option.map (fun xmlElement -> xmlElement.Content)
 
         return releaseNotes
+    | None -> return None
+}
+
+[<RequireQualifiedAccess>]
+type LicenseInfo =
+    | File of string
+    | Expression of string
+    | Unkown of string
+
+let private retrieveLicenseFile (entries: IEntry array) (licensePath: string) = asyncResult {
+    let entry =
+        entries
+        |> Array.tryFind (fun entry ->
+            entry.filename.ToLowerInvariant() = licensePath.ToLowerInvariant()
+        )
+
+    match entry with
+    | None ->
+        return! Error $"Could not find the license file in the package. License path: '%s{licensePath}'"
+
+    | Some entry ->
+        let! content =
+            entry.getDataString (zip.createStringWriter ())
+            |> Async.AwaitPromise
+
+        return content
+}
+
+let private tryExtractLicense (entries: IEntry array) = asyncResult {
+    let nuspecEntry =
+        entries
+        |> Array.tryFind (fun entry ->
+            entry.filename.ToLowerInvariant().EndsWith(".nuspec")
+        )
+
+    match nuspecEntry with
+    | Some nuspecEntry ->
+        let! content =
+            nuspecEntry.getDataString (zip.createStringWriter ())
+            |> Async.AwaitPromise
+
+        JS.console.log content
+
+        let xmlDocument = SimpleXml.parseDocument content
+
+        let licenseInfo = option {
+            let! licenseElement =
+                xmlDocument.Root
+                |> SimpleXml.tryFindElementByName "metadata"
+                |> Option.map (SimpleXml.tryFindElementByName "license")
+                |> Option.flatten
+
+            JS.console.log(licenseElement)
+
+            let! licenseTypeAttr = Map.tryFind "type" licenseElement.Attributes
+
+            JS.console.log(licenseTypeAttr)
+
+            if licenseTypeAttr = "file" then
+                return LicenseInfo.File licenseElement.Content
+            else if licenseTypeAttr = "expression" then
+                return LicenseInfo.Expression licenseElement.Content
+            else
+                return LicenseInfo.Unkown licenseTypeAttr
+        }
+
+        match licenseInfo with
+        | Some (LicenseInfo.Expression expression) ->
+            return Some (LicenseType.Expression expression)
+
+        | Some (LicenseInfo.File file) ->
+            let! licenseText = retrieveLicenseFile entries file
+
+            return Some (LicenseType.File licenseText)
+
+        | Some (LicenseInfo.Unkown unkownType) ->
+            return! Error $"Unkown license type '%s{unkownType}'"
+        | None -> return None
+
     | None -> return None
 }
 
@@ -300,9 +381,7 @@ let private fetchVersions (url: string) = asyncResult {
             |> String.concat "\n"
         )
 
-    let versions =
-        catalogPage.Items
-        |> Option.defaultValue []
+    let versions = catalogPage.Items |> Option.defaultValue []
 
     return versions
 }
@@ -411,6 +490,8 @@ let private fetchPackageInfo
 
         let! readmeOpt = tryExtractReadme packageContent |> Async.AwaitPromise
 
+        let! licenseOpt = tryExtractLicense packageContent
+
         let! releaseNoteOpt =
             tryExtractReleaseNotes packageContent |> Async.AwaitPromise
 
@@ -419,6 +500,7 @@ let private fetchPackageInfo
             Versions = allPackageVersions
             Readme = readmeOpt
             ReleaseNotes = releaseNoteOpt
+            License = licenseOpt
         }
     }
 
@@ -454,12 +536,6 @@ type Pages with
         | Deferred.HasNotStartedYet -> Html.none
         | Deferred.InProgress -> Components.Loading()
         | Deferred.Failed reason -> Html.text reason.Message
-
-        // | Deferred.Resolved DataStatus.PackageNotFound ->
-        //     Components.PackageNotFound props.PackageId
-
-        // | Deferred.Resolved DataStatus.MultiplePackagesFound ->
-        //     Components.MultiplePackagesFound props.PackageId
 
         | Deferred.Resolved (Error error) -> Components.Errored error
 

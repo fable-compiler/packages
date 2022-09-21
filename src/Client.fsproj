@@ -13,6 +13,7 @@
     <Compile Include="Extensions/List.Extensions.fs" />
     <Compile Include="Extensions/Elmish.Extensions.fs" />
     <Compile Include="Extensions/Thoth.Json.Extensions.fs" />
+    <Compile Include="Types/Types.fs" />
     <Compile Include="Types/NuGetResponse.fs" />
     <Compile Include="Types/NuGetOption.fs" />
     <Compile Include="Types/SortBy.fs" />
@@ -33,6 +34,7 @@
     <Compile Include="Components/PackageHome/Dependencies.fs" />
     <Compile Include="Components/PackageHome/Readme.fs" />
     <Compile Include="Components/PackageHome/ReleaseNotes.fs" />
+    <Compile Include="Components/PackageHome/License.fs" />
     <Compile Include="Pages/Pages.fs" />
     <Compile Include="Pages/NotFound.fs" />
     <Compile Include="Pages/Search.fs" />
