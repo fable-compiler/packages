@@ -21,7 +21,6 @@ open Feliz.Lucide
 open Fable.ZipJs
 open Fable.SimpleXml
 open FsToolkit.ErrorHandling
-open System.Text.RegularExpressions
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -52,7 +51,6 @@ type private DataStatus =
 type private Tab =
     | Readme
     | Dependencies
-    | UsedBy
     | Versions
     | ReleaseNotes
     | License
@@ -98,7 +96,6 @@ type Components with
             match tabToRender with
             | Tab.Readme -> Lucide.Book, "Readme"
             | Tab.Dependencies -> Lucide.Boxes, "Dependencies"
-            | Tab.UsedBy -> Lucide.GitFork, "Used by"
             | Tab.Versions -> Lucide.History, "Versions"
             | Tab.ReleaseNotes -> Lucide.BookOpen, "Release notes"
             | Tab.License -> Lucide.Copyright, "License"
@@ -144,7 +141,6 @@ type Components with
                                 activeTab,
                                 setActiveTab
                             )
-                            Components.Tab(Tab.UsedBy, activeTab, setActiveTab)
                             Components.Tab(
                                 Tab.Versions,
                                 activeTab,
@@ -178,9 +174,6 @@ type Components with
                         info.Package
                         info.CatalogPage
                         info.Package.Version
-                | Tab.UsedBy ->
-                    // Components.UsedBy info.Package
-                    Html.div "Components.UsedBy info.Package"
                 | Tab.Versions ->
                     Components.Versions info.Package info.CatalogPage
                 | Tab.ReleaseNotes -> Components.ReleaseNotes info.ReleaseNotes
