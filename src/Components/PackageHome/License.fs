@@ -21,6 +21,9 @@ type Components with
         match licenseOpt with
         | Some (LicenseType.File content) ->
             Bulma.content [
+                prop.style [
+                    style.whitespace.preline
+                ]
                 prop.text content
             ]
 
