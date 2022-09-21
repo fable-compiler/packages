@@ -12,12 +12,16 @@ open Fable.Packages.Components.PackageHome.PageHeader
 open Fable.Packages.Components.PackageHome.Versions
 open Fable.Packages.Components.PackageHome.Dependencies
 open Fable.Packages.Components.PackageHome.Readme
+open Fable.Packages.Components.PackageHome.ReleaseNotes
 open Fable.SimpleHttp
 open Thoth.Json
 open Fable.Core.JsInterop
 open Browser.Dom
 open Feliz.Lucide
 open Fable.ZipJs
+open Fable.SimpleXml
+open FsToolkit.ErrorHandling
+open System.Text.RegularExpressions
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -33,7 +37,8 @@ type private DetailedError = {
 type private PackageFoundInfo = {
     Package: V3.SearchResponse.Package
     CatalogPage: V3.CatalogRoot.CatalogPage
-    Readme : string option
+    Readme: string option
+    ReleaseNotes: string option
 }
 
 [<RequireQualifiedAccess>]
@@ -50,8 +55,36 @@ type private Tab =
     | UsedBy
     | Versions
     | ReleaseNotes
+    | License
 
 type Components with
+
+    [<ReactComponent>]
+    static member private Loading() =
+        Bulma.hero [
+            prop.className "is-fullheight-with-spaced-navbar"
+
+            prop.children [
+                Bulma.heroBody [
+                    Bulma.container [
+                        text.hasTextCentered
+                        prop.style [
+                            style.maxWidth (length.percent 50)
+                        ]
+
+                        prop.children [
+                            Bulma.progress [
+                                color.isPrimary
+                            ]
+                            Bulma.text.div [
+                                prop.text
+                                    "Loading package version information..."
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
 
     [<ReactComponent>]
     static member private Tab
@@ -68,6 +101,7 @@ type Components with
             | Tab.UsedBy -> Lucide.GitFork, "Used by"
             | Tab.Versions -> Lucide.History, "Versions"
             | Tab.ReleaseNotes -> Lucide.BookOpen, "Release notes"
+            | Tab.License -> Lucide.Copyright, "License"
 
         Bulma.tab [
             if tabToRender = activeTab then
@@ -121,6 +155,11 @@ type Components with
                                 activeTab,
                                 setActiveTab
                             )
+                            Components.Tab(
+                                Tab.License,
+                                activeTab,
+                                setActiveTab
+                            )
                         ]
                     ]
                 ]
@@ -144,9 +183,9 @@ type Components with
                     Html.div "Components.UsedBy info.Package"
                 | Tab.Versions ->
                     Components.Versions info.Package info.CatalogPage
-                | Tab.ReleaseNotes ->
-                    // Components.ReleaseNotes info.Package
-                    Html.div "Components.ReleaseNotes info.Package"
+                | Tab.ReleaseNotes -> Components.ReleaseNotes info.ReleaseNotes
+                | Tab.License ->
+                    Html.div "Components.License info.Package"
             ]
         ]
 
@@ -168,31 +207,59 @@ type Components with
     static member private Errored(message: string) =
         Components.AnErrorOccured("An unexpected error occured", message)
 
+let private tryExtractReleaseNotes (entries: IEntry array) = promise {
+    let nuspecEntry =
+        entries
+        |> Array.tryFind (fun entry ->
+            entry.filename.ToLowerInvariant().EndsWith(".nuspec")
+        )
+
+    match nuspecEntry with
+    | Some nuspecEntry ->
+        let! content = nuspecEntry.getDataString (zip.createStringWriter ())
+        // Wait for a fix from Fable.SimpleXml
+        // See: https://github.com/Zaid-Ajaj/Fable.SimpleXml/issues/39
+        let xmlDocument = SimpleXml.parseDocument content
+
+        let releaseNotes =
+            xmlDocument.Root
+            |> SimpleXml.tryFindElementByName "metadata"
+            |> Option.map (SimpleXml.tryFindElementByName "releaseNotes")
+            |> Option.flatten
+            |> Option.map (fun xmlElement ->
+                xmlElement.Content
+            )
+
+        return releaseNotes
+    | None -> return None
+}
+
 /// <summary>
 /// Retrieve the README.md file content if present in the package
 /// </summary>
 /// <param name="entries"></param>
 /// <typeparam name="'a"></typeparam>
 /// <returns></returns>
-let private tryExtractReadme (entries : IEntry array) =
-    promise {
-        // Naive way to retrieve the readme file
-        // In the future, we should parse the nuspec file to retrieve the readme file
-        let readmeEntry =
-            entries
-            |> Array.tryFind (fun entry -> entry.filename.ToLowerInvariant() = "readme.md")
+let private tryExtractReadme (entries: IEntry array) = promise {
+    // Naive way to retrieve the readme file
+    // In the future, we should parse the nuspec file to retrieve the readme file
+    let readmeEntry =
+        entries
+        |> Array.tryFind (fun entry ->
+            entry.filename.ToLowerInvariant() = "readme.md"
+        )
 
-        match readmeEntry with
-        | Some entry ->
-            let! content = entry.getDataString (zip.createStringWriter())
-            return Some content
+    match readmeEntry with
+    | Some entry ->
+        let! content = entry.getDataString (zip.createStringWriter ())
+        return Some content
 
-        | None -> return None
-    }
+    | None -> return None
+}
 
 let private fetchPackageContent
-    (packageId : string)
-    (packageVersion : string)
+    (packageId: string)
+    (packageVersion: string)
     (catalogPage: V3.CatalogRoot.CatalogPage)
     =
     async {
@@ -218,21 +285,17 @@ let private fetchPackageContent
                 | ResponseContent.Blob blob ->
                     let zipReader = zip.createZipReader blob
 
-                    let! entries =
-                        zipReader.getEntries()
-                        |> Async.AwaitPromise
+                    let! entries = zipReader.getEntries () |> Async.AwaitPromise
 
-                    let! readmeOpt = tryExtractReadme entries |> Async.AwaitPromise
+                    return Ok entries
 
-                    return Ok readmeOpt
-
-                | _ ->
-                    return failwith "Unexpected response content type"
+                | _ -> return failwith "Unexpected response content type"
             | None ->
-                return Error $"Could not find package content URL for %s{packageId}@%s{packageVersion}"
+                return
+                    Error
+                        $"Could not find package content URL for %s{packageId}@%s{packageVersion}"
 
-        | None ->
-            return Error "Missing catalog page items"
+        | None -> return Error "Missing catalog page items"
     }
 
 let private fetchCatalogPage (catalogRootUrl: string) = async {
@@ -255,109 +318,118 @@ let private fetchCatalogPage (catalogRootUrl: string) = async {
     | Error errorMessage -> return Error errorMessage
 }
 
-let private fetchPackageInfo (packageId: string) (packageVersion : string option) : Async<DataStatus> = async {
-    let queryParams =
-        [
-            $"q=PackageId:\"%s{packageId}\"" // We want to only the Fable packages
-            // Include prerelease packages and set the semVerLevel to 2.0.0
-            // to match the way NuGet.org search works
-            // See: https://github.com/NuGet/NuGetGallery/issues/9235
-            "prerelease=true"
-            "semVerLevel=2.0.0"
-        ]
-        |> List.map window.encodeURI
-        |> String.concat "&"
-
-    let requestUrl =
-        $"https://azuresearch-usnc.nuget.org/query?%s{queryParams}"
-
-    let! response =
-        Http.request requestUrl
-        |> Http.method GET
-        |> Http.header (Headers.accept "application/json")
-        |> Http.send
-
-    let jsonResponse =
-        Decode.fromString V3.SearchResponse.decoder response.responseText
-
-    match jsonResponse with
-    | Ok searchResponse ->
-        if searchResponse.TotalHits = 0 then
-            return DataStatus.PackageNotFound
-        else if searchResponse.TotalHits > 1 then
-            return DataStatus.MultiplePackagesFound
-        else
-            match searchResponse.Data.Head.Registration with
-            | Some registrationUrl ->
-                match! fetchCatalogPage registrationUrl with
-                | Ok catalogPage ->
-                    let requestedVersion =
-                        match packageVersion with
-                        | Some packageVersion -> packageVersion
-                        | None -> searchResponse.Data.Head.Version
-                    let! readmeResult = fetchPackageContent packageId requestedVersion catalogPage
-
-                    match readmeResult with
-                    | Ok readmeOpt ->
-                        let result = {
-                            Package = searchResponse.Data.Head
-                            CatalogPage = catalogPage
-                            Readme = readmeOpt
-                        }
-
-                        return DataStatus.PackageFound result
-                    | Error errorMessage ->
-                        return DataStatus.Errored errorMessage
-
-                | Error errorMessage -> return DataStatus.Errored errorMessage
-            | None ->
-
-                return
-                    [
-                        "Missing registration URL"
-                        ""
-                        "Cannot fetch the package details"
-                    ]
-                    |> String.concat "\n"
-                    |> DataStatus.Errored
-
-    | Error errorMessage ->
-        return
+let private fetchPackageInfo
+    (packageId: string)
+    (packageVersion: string option)
+    : Async<Result<PackageFoundInfo, string>> =
+    asyncResult {
+        let queryParams =
             [
-                "Error while decoding the search response JSON"
-                ""
-                errorMessage
+                $"q=PackageId:\"%s{packageId}\"" // We want to only the Fable packages
+                // Include prerelease packages and set the semVerLevel to 2.0.0
+                // to match the way NuGet.org search works
+                // See: https://github.com/NuGet/NuGetGallery/issues/9235
+                "prerelease=true"
+                "semVerLevel=2.0.0"
             ]
-            |> String.concat "\n"
-            |> DataStatus.Errored
-}
+            |> List.map window.encodeURI
+            |> String.concat "&"
+
+        let requestUrl =
+            $"https://azuresearch-usnc.nuget.org/query?%s{queryParams}"
+
+        let! response =
+            Http.request requestUrl
+            |> Http.method GET
+            |> Http.header (Headers.accept "application/json")
+            |> Http.send
+
+        let! searchResponse =
+            Decode.fromString V3.SearchResponse.decoder response.responseText
+            |> Result.mapError (fun errorMessage ->
+                [
+                    "Error while decoding the search response JSON"
+                    ""
+                    errorMessage
+                ]
+                |> String.concat "\n"
+            )
+
+        let! registrationUrl =
+            if searchResponse.TotalHits = 0 then
+                Error "Package not found"
+            else if searchResponse.TotalHits > 1 then
+                Error "Multiple packages found"
+            else
+                match searchResponse.Data.Head.Registration with
+                | Some registrationUrl -> Ok registrationUrl
+                | None -> Error "Missing registration URL"
+
+        let! catalogPage = fetchCatalogPage registrationUrl
+
+        let requestedVersion =
+            match packageVersion with
+            | Some packageVersion -> packageVersion
+            | None -> searchResponse.Data.Head.Version
+
+        let! packageContent =
+            fetchPackageContent packageId requestedVersion catalogPage
+
+        let! readmeOpt = tryExtractReadme packageContent |> Async.AwaitPromise
+
+        let! releaseNoteOpt =
+            tryExtractReleaseNotes packageContent |> Async.AwaitPromise
+
+        return {
+            Package = searchResponse.Data.Head
+            CatalogPage = catalogPage
+            Readme = readmeOpt
+            ReleaseNotes = releaseNoteOpt
+        }
+    }
+
+type PackageHomeProps =
+    {| PackageId: string
+       PackageVersion: string option |}
 
 type Pages with
 
     [<ReactComponent>]
-    static member PackageHome(parameters: Router.PackageParameters) =
-        let activeTab, setActiveTab =
-            React.useState Tab.Readme
+    static member PackageHome(props: PackageHomeProps) =
+        let activeTab, setActiveTab = React.useState Tab.Readme
 
         let package =
             React.useDeferredNoCancel (
-                fetchPackageInfo parameters.PackageId parameters.Version,
+                fetchPackageInfo props.PackageId props.PackageVersion,
                 [|
-                    parameters
+                    props
                 |]
             )
 
+        // When navigating to another version of the same package
+        // react doesn't seems to reset the component completely
+        // using useEffect is a workaround to reset the active tab
+        React.useEffect (
+            (fun () -> setActiveTab Tab.Readme),
+            [|
+                box props
+            |]
+        )
+
         match package with
         | Deferred.HasNotStartedYet -> Html.none
-        | Deferred.InProgress -> Html.none
-        | Deferred.Failed _ -> Html.none
-        | Deferred.Resolved DataStatus.PackageNotFound ->
-            Components.PackageNotFound parameters.PackageId
-        | Deferred.Resolved DataStatus.MultiplePackagesFound ->
-            Components.MultiplePackagesFound parameters.PackageId
-        | Deferred.Resolved (DataStatus.Errored error) ->
-            Components.Errored error
-        | Deferred.Resolved (DataStatus.PackageFound info) ->
+        | Deferred.InProgress -> Components.Loading()
+        | Deferred.Failed _ -> Html.text "Failed"
+
+        // | Deferred.Resolved DataStatus.PackageNotFound ->
+        //     Components.PackageNotFound props.PackageId
+
+        // | Deferred.Resolved DataStatus.MultiplePackagesFound ->
+        //     Components.MultiplePackagesFound props.PackageId
+
+        | Deferred.Resolved (Error error) -> Components.Errored error
+
+        | Deferred.Resolved (Ok info) ->
             Html.div [
                 Bulma.section [
                     Components.PageHeader info.Package

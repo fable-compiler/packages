@@ -3,6 +3,7 @@ module Fable.Packages.Components.PackageHome.Versions
 open Fable.Core.JsInterop
 open Feliz
 open Feliz.Bulma
+open Fable.Packages
 open Fable.Packages.Components
 open Fable.Packages.Types
 open Fable.DateFunctions
@@ -68,11 +69,18 @@ type Components with
                                     )
                                     |> Option.defaultValue null
 
+                                let packageUrl =
+                                    ({
+                                        PackageId = nugetPackage.Id
+                                        Version = Some package.CatalogEntry.Version
+                                    } : Router.PackageParameters)
+                                    |> Router.Page.Package
+                                    |> Router.toUrl
+
                                 Html.tr [
                                     Html.td [
                                         Html.a [
-                                            // prop.href
-                                            //     package.CatalogEntry.PackageContent
+                                            prop.href packageUrl
                                             prop.children [
                                                 Html.text
                                                     package.CatalogEntry.Version

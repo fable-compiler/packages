@@ -83,6 +83,8 @@ NUGET
       Feliz (>= 1.17 < 2.0)
       FSharp.Core (>= 4.7.2)
     FSharp.Core (6.0.6)
+    FsToolkit.ErrorHandling (2.13)
+      FSharp.Core (>= 4.7.2)
     Glutinum.Feliz.Lucide (1.0.1)
       Fable.Core (>= 3.7.1)
       Fable.React (>= 8.0.1 < 9.0)

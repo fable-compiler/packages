@@ -32,6 +32,7 @@
     <Compile Include="Components/PackageHome/Versions.fs" />
     <Compile Include="Components/PackageHome/Dependencies.fs" />
     <Compile Include="Components/PackageHome/Readme.fs" />
+    <Compile Include="Components/PackageHome/ReleaseNotes.fs" />
     <Compile Include="Pages/Pages.fs" />
     <Compile Include="Pages/NotFound.fs" />
     <Compile Include="Pages/Search.fs" />

@@ -26,7 +26,12 @@ let App () =
         match page with
         | Router.Page.Search -> Pages.Search()
 
-        | Router.Page.Package parameters -> Pages.PackageHome parameters
+        | Router.Page.Package parameters ->
+            Pages.PackageHome
+                {|
+                    PackageId = parameters.PackageId
+                    PackageVersion = parameters.Version
+                |}
 
         | Router.Page.NotFound -> Pages.NotFound()
 
