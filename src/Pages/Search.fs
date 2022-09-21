@@ -159,15 +159,18 @@ type Components with
                     prop.text "No packages found."
                 ]
 
-            Bulma.section [
-                Components.Pagination
-                    {|
-                        CurrentPage = currentPage
-                        TotalHits = matchedPackages.Count
-                        OnNavigate = setCurrentPage
-                        ElementsPerPage = elementsPerPage
-                    |}
-            ]
+            // Only show the pagination if there is more than one page
+            if matchedPackages.Count > elementsPerPage then
+                Bulma.section [
+                    Components.Pagination
+                        {|
+                            CurrentPage = currentPage
+                            TotalHits = matchedPackages.Count
+                            OnNavigate = setCurrentPage
+                            ElementsPerPage = elementsPerPage
+                        |}
+                ]
+
         ]
 
 type Pages with
