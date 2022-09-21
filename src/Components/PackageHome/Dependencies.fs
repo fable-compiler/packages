@@ -3,6 +3,7 @@ module Fable.Packages.Components.PackageHome.Dependencies
 open Fable.Core.JsInterop
 open Feliz
 open Feliz.Bulma
+open Fable.Packages
 open Fable.Packages.Components
 open Fable.Packages.Types
 open Fable.DateFunctions
@@ -25,10 +26,19 @@ type Components with
             // See https://docs.microsoft.com/en-us/nuget/api/registration-base-url-resource#package-dependency
             packageDependency.Range |> Option.defaultValue "(, )"
 
+        let dependencyUrl =
+            ({
+                PackageId = packageDependency.Id
+                Version = None
+            } : Router.PackageParameters)
+            |> Router.Page.Package
+            |> Router.toUrl
+
         Html.div [
             prop.key packageDependency.Id
             prop.children [
                 Html.a [
+                    prop.href dependencyUrl
                     prop.text packageDependency.Id
                 ]
                 Bulma.text.span [
@@ -44,24 +54,28 @@ type Components with
             dependencyGroup.TargetFramework
             |> Option.defaultValue "All supported frameworks"
 
-        Html.div [
-            Html.div [
-                prop.className "title is-5 is-underlined"
-                prop.text framework
+        Bulma.text.div [
+            spacing.mb3
+
+            prop.children [
+                Html.div [
+                    prop.className "title is-5 is-underlined"
+                    prop.text framework
+                ]
+
+                match dependencyGroup.Dependencies with
+                | Some dependencies ->
+                    Html.ul [
+                        for dependency in dependencies do
+                            Components.PackageDependency dependency
+                    ]
+
+                | None ->
+                    Bulma.text.div [
+                        color.hasTextGrey
+                        prop.text "No dependencies"
+                    ]
             ]
-
-            match dependencyGroup.Dependencies with
-            | Some dependencies ->
-                Html.ul [
-                    for dependency in dependencies do
-                        Components.PackageDependency dependency
-                ]
-
-            | None ->
-                Bulma.text.div [
-                    color.hasTextGrey
-                    prop.text "No dependencies"
-                ]
         ]
 
     [<ReactComponent>]
