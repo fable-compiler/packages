@@ -54,6 +54,15 @@ type Components with
                                             prop.classes [
                                                 "navbar-item"
                                                 "is-hidden-mobile"
+                                                "is-active"
+                                            ]
+                                            prop.href "/packages"
+                                            prop.text "Packages"
+                                        ]
+                                        Html.a [
+                                            prop.classes [
+                                                "navbar-item"
+                                                "is-hidden-mobile"
                                             ]
                                             prop.href "/repl/"
                                             prop.text "Try"
