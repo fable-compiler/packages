@@ -86,6 +86,7 @@ input[type="radio"] {
 .packages-list {
     margin-right: 1.5rem;
     margin-left: 1.5rem;
+    margin-bottom: 3rem;
 
     .media-content {
         // Prevent vertical scrollbar to appear on mobile
@@ -159,7 +160,6 @@ input[type="radio"] {
 }
 
 .package-home-tabs {
-
     @include until(500px) {
         .tabs ul {
             flex-direction: column;
@@ -170,13 +170,11 @@ input[type="radio"] {
         }
     }
 
-
     .tabs ul {
         flex-shrink: 1;
         flex-wrap: wrap;
         border-bottom-color: transparent;
     }
-
 }
 
 .tabs {
@@ -192,4 +190,19 @@ input[type="radio"] {
     //@include strong-shadow-box;
     box-shadow: unset;
     margin-top: 2rem;
+}
+
+#root {
+    min-height: calc(100vh - #{$navbar-height + $navbar-padding-vertical * 2});
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+.main-body {
+    width: inherit;
 }

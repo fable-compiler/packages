@@ -35,16 +35,33 @@ let App () =
 
         | Router.Page.NotFound -> Pages.NotFound()
 
-    Html.div [
+    React.fragment [
         Components.Navbar()
 
         Bulma.container [
-            prop.className "is-max-desktop"
+            prop.className "is-max-desktop main-body"
 
             prop.children [
                 React.router [
                     router.onUrlChanged (Router.parseUrl >> setPage)
                     router.children pageElement
+                ]
+            ]
+        ]
+
+        Bulma.footer [
+            Bulma.text.div [
+                size.isSize5
+                prop.className "has-text-centered content"
+                prop.children [
+                    Html.p "Fable.Packages is in prototype phase"
+                    Html.p "Future versions will aim to improve performances"
+                    Html.text "Please report any issues on "
+                    Html.a [
+                        prop.className "has-text-white is-underlined"
+                        prop.href "https://github.com/fable-compiler/packages/issues"
+                        prop.text "GitHub"
+                    ]
                 ]
             ]
         ]
