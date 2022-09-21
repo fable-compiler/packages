@@ -15,10 +15,6 @@ Description of the targets:
 | Watch | Start a local server on [http://localhost:3000](http://localhost:3000)   |
 | Build | Build the website in production mode. Destination is `src/dist`  |
 
-If preferred, you can can run the project on [Gitpod](https://gitpod.io/) by clicking on the button below.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/MangelMaxime/template-gitpod-fable-3)
-
 ### Conventions
 
 #### Components
