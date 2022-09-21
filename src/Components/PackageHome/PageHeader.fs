@@ -8,8 +8,7 @@ open Fable.Packages.Components.NuGetPackageMedia
 open Fable.Packages.Types
 open Feliz.ReactMarkdown
 
-let private remarkGfm: obj =
-    import "default" "remark-gfm"
+let private remarkGfm: obj = import "default" "remark-gfm"
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -18,7 +17,15 @@ emitJsStatement () "import React from \"react\""
 type Components with
 
     [<ReactComponent>]
-    static member IconAndName(package: V3.SearchResponse.Package) =
+    static member IconAndName
+        (package: V3.SearchResponse.Package)
+        (requestedVersion: string option)
+        =
+        // If the user didn't request a specific version, we show the latest version
+        // Otherwise, we show the requested version
+        let displayedVersion =
+            requestedVersion |> Option.defaultValue package.Version
+
         Bulma.text.div [
             prop.className "title is-4"
             helpers.isFlex
@@ -40,15 +47,14 @@ type Components with
                     color.hasTextGrey
                     text.hasTextWeightLight
                     spacing.ml4
-                    prop.text $"v%s{package.Version}"
+                    prop.text $"v%s{displayedVersion}"
                 ]
             ]
         ]
 
     [<ReactComponent>]
     static member private Description(description: string option) =
-        let description =
-            description |> Option.defaultValue ""
+        let description = description |> Option.defaultValue ""
 
         Bulma.text.div [
             text.hasTextCentered
@@ -65,7 +71,7 @@ type Components with
         ]
 
     [<ReactComponent>]
-    static member private Tags(tags : (string list) option) =
+    static member private Tags(tags: (string list) option) =
         match tags with
         | None -> null
         | Some tags ->
@@ -85,12 +91,15 @@ type Components with
             ]
 
     [<ReactComponent>]
-    static member PageHeader(package: V3.SearchResponse.Package) =
+    static member PageHeader
+        (package: V3.SearchResponse.Package)
+        (requestedVersion: string option)
+        =
         Bulma.text.div [
             spacing.mb5
 
             prop.children [
-                Components.IconAndName package
+                Components.IconAndName package requestedVersion
                 Components.Description package.Description
                 Components.Tags package.Tags
             ]

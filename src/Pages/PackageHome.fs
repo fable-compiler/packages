@@ -432,7 +432,7 @@ type Pages with
         | Deferred.Resolved (Ok info) ->
             Html.div [
                 Bulma.section [
-                    Components.PageHeader info.Package
+                    Components.PageHeader info.Package props.PackageVersion
                     Components.TabsHeader(activeTab, setActiveTab)
                     Components.TabBody(activeTab, info)
                 ]
