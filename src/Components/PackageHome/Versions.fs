@@ -37,7 +37,6 @@ type Components with
                                 Html.th "Version"
                                 Html.th "Downloads"
                                 Html.th "Last updated"
-                                Html.th "Status"
                             ]
                         ]
 
@@ -49,57 +48,56 @@ type Components with
                                     | None -> true
                                     | Some false -> false
 
-                                let publishedText =
-                                    package.CatalogEntry.Published
-                                    |> Option.map (fun date ->
-                                        date.FormatDistance(
-                                            System.DateTime.UtcNow
+                                if isListed then
+
+                                    let publishedText =
+                                        package.CatalogEntry.Published
+                                        |> Option.map (fun date ->
+                                            date.FormatDistance(
+                                                System.DateTime.UtcNow
+                                            )
+                                            |> Html.text
                                         )
-                                        |> Html.text
-                                    )
-                                    |> Option.defaultValue null
+                                        |> Option.defaultValue null
 
-                                let downloadCount =
-                                    nugetPackage.Versions
-                                    |> List.tryFind (fun version ->
-                                        version.Version = package.CatalogEntry.Version
-                                    )
-                                    |> Option.map (fun version ->
-                                        Html.text version.Downloads
-                                    )
-                                    |> Option.defaultValue null
+                                    let downloadCount =
+                                        nugetPackage.Versions
+                                        |> List.tryFind (fun version ->
+                                            version.Version = package.CatalogEntry.Version
+                                        )
+                                        |> Option.map (fun version ->
+                                            Html.text version.Downloads
+                                        )
+                                        |> Option.defaultValue null
 
-                                let packageUrl =
-                                    ({
-                                        PackageId = nugetPackage.Id
-                                        Version = Some package.CatalogEntry.Version
-                                    } : Router.PackageParameters)
-                                    |> Router.Page.Package
-                                    |> Router.toUrl
+                                    let packageUrl =
+                                        ({
+                                            PackageId = nugetPackage.Id
+                                            Version = Some package.CatalogEntry.Version
+                                        } : Router.PackageParameters)
+                                        |> Router.Page.Package
+                                        |> Router.toUrl
 
-                                Html.tr [
-                                    Html.td [
-                                        Html.a [
-                                            prop.href packageUrl
-                                            prop.children [
-                                                Html.text
-                                                    package.CatalogEntry.Version
+                                    Html.tr [
+                                        Html.td [
+                                            Html.a [
+                                                prop.href packageUrl
+                                                prop.children [
+                                                    Html.text
+                                                        package.CatalogEntry.Version
+                                                ]
                                             ]
                                         ]
+                                        Html.td [
+                                            downloadCount
+                                        ]
+                                        Html.td [
+                                            publishedText
+                                        ]
                                     ]
-                                    Html.td [
-                                        downloadCount
-                                    ]
-                                    Html.td [
-                                        publishedText
-                                    ]
-                                    Html.td [
-                                        if isListed then
-                                            Html.text "Listed"
-                                        else
-                                            Html.text "Unlisted"
-                                    ]
-                                ]
+
+                                else
+                                    null
 
                         ]
                     ]
