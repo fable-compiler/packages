@@ -114,25 +114,29 @@ type React with
             ?dependencies: obj array
         ) =
         // Don't use useMemo here because React doesn't guarantee it won't recreate it again
-        let obs, _ = React.useState (fun () -> ElmishObservable<'Model, 'Msg>())
+        let obs, _ = React.useState(fun () -> ElmishObservable<'Model, 'Msg>())
 
         // Initialize the program without previous state
-        let state, setState = React.useState (runProgram program arg obs None)
+        let state, setState = React.useState(runProgram program arg obs None)
 
-        React.useEffect (
-            (fun () ->
-                // If the component has been disposed, re-build it
-                // use the last known state.
-                // This make HMR support works by maintaining the state
-                // We need to rebuild a new program, in order to get access
-                // to the new dispatch instance
-                if obs.HasDisposedOnce then
-                    runProgram program arg obs (Some state) () |> setState
+        // Store initial dependencies
+        let deps, setDeps = React.useState(dependencies)
 
-                React.createDisposable (obs.DisposeState)
-            ),
-            defaultArg dependencies [||]
-        )
+        React.useEffect((fun () ->
+            // Update for dependencies is the state valid
+            dependencies |> setDeps
+
+            // If the component has been disposed, re-build it
+            // use the last known state.
+            // This make HMR support works by maintaining the state
+            // We need to rebuild a new program, in order to get access
+            // to the new dispatch instance
+            if obs.HasDisposedOnce then
+                // Use only state that is valid for current dependencies
+                let state = if deps <> dependencies then None else Some state
+                runProgram program arg obs state () |> setState
+            React.createDisposable(obs.DisposeState)
+        ), defaultArg dependencies [||])
 
         obs.Subscribe(setState)
         state, obs.Dispatch
