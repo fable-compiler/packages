@@ -11,9 +11,10 @@ open Fable.Packages.Components.SearchForm
 open Fable.Packages.Components.Pagination
 open Fable.Packages.Components.NuGetPackageMedia
 open Fable.Packages.Components.SearchIndexing
-open Fable.SimpleHttp
-open Thoth.Json
+open Fable.Core
 open Fable.Core.JsInterop
+open Glutinum.Fuse
+open System
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -40,7 +41,7 @@ let private filterByPackageTypes
         | Some tags ->
             searchedPackageTypes
             |> Seq.exists (fun searchedPackageType ->
-                List.contains (PackageType.toTag searchedPackageType) tags
+                Array.contains (PackageType.toTag searchedPackageType) tags
             )
         // The package doesn't have any tags, so we apply the search on the package type
         // Discard that package
@@ -61,25 +62,45 @@ let private filterByTargets
         | Some tags ->
             searchedTargets
             |> Seq.exists (fun searchedTarget ->
-                List.contains (Target.toTag searchedTarget) tags
+                Array.contains (Target.toTag searchedTarget) tags
             )
         // The package doesn't have any tags, so we apply the search on the package type
         // Discard that package
         | None -> false
+
+let private filterByTerms
+    (searchedText: string)
+    (indexedPackages: ResizeArray<IndexedNuGetPackage>)
+    =
+    let fuse =
+        fuse.Create(
+            indexedPackages,
+            Fuse.IFuseOptions<_>(
+                keys = [|
+                    U3.Case1(Fuse.FuseOptionKeyObject("Package.Id", 10))
+                    U3.Case1(Fuse.FuseOptionKeyObject("Package.Description", 2))
+                    U3.Case1(Fuse.FuseOptionKeyObject("Package.Tags", 1))
+                |],
+                distance = 50,
+                includeScore = true,
+                threshold = 0.4
+                // A threshold value of 0.4 seems to be the right spot to not
+                // retrieve Fable.Core when searching for "json" term
+                // I think Fable.Core can match "json" term because of "js" tags
+            )
+        )
+
+    fuse.search (searchedText)
 
 type Components with
 
     [<ReactComponent>]
     static member private ShowSearchFormAndResults
         (indexedPackages: ResizeArray<IndexedNuGetPackage>)
-        (urlParameters : Router.SearchParameters option)
+        (urlParameters: Router.SearchParameters option)
         =
-        let initialSearchOptions =
-
-                SearchOptions.initial
-
         let activeSearchOptions, setActiveSearchOptions =
-            React.useState initialSearchOptions
+            React.useState SearchOptions.initial
 
         let elementsPerPage = 10
         // Store the current page displayed
@@ -98,7 +119,7 @@ type Components with
 
         React.useEffect (
             fun () ->
-                let result =
+                let intermediateResult =
                     indexedPackages
                     // Filter by package type
                     |> Seq.filter (
@@ -106,27 +127,80 @@ type Components with
                     )
                     // Filter by target
                     |> Seq.filter (filterByTargets activeSearchOptions.Targets)
-                    |> Seq.sortWith (fun packageA packageB ->
-                        match activeSearchOptions.SortBy with
-                        | SortBy.Relevance ->
-                            compare
-                                packageA.Package.TotalDownloads
-                                packageB.Package.TotalDownloads
-                            * -1
-                        | SortBy.Downloads ->
-                            compare
-                                packageA.Package.TotalDownloads
-                                packageB.Package.TotalDownloads
-                            * -1
-                        | SortBy.RecentlyUpdated ->
-                            compare
-                                packageA.LastVersionInfo.Published
-                                packageB.LastVersionInfo.Published
-                            * -1
-                    )
                     |> ResizeArray
 
-                setMatchedPackages result
+                let result =
+                    if String.IsNullOrEmpty activeSearchOptions.TextField then
+                        intermediateResult
+                        |> Seq.sortByDescending (fun package ->
+                            match activeSearchOptions.SortBy with
+                            | SortBy.Relevance -> package.Package.TotalDownloads
+                            | SortBy.Downloads -> package.Package.TotalDownloads
+                            | SortBy.RecentlyUpdated -> Some package.LastVersionInfo.Published.Ticks
+                        )
+                    else
+                        filterByTerms
+                            activeSearchOptions.TextField
+                            intermediateResult
+                        |> Seq.sortWith (fun packageA packageB ->
+                            match activeSearchOptions.SortBy with
+                            | SortBy.Relevance ->
+                                // Try to combine fuse score and total downloads to get the best result
+                                // A good test for this formula is to search for "json"
+                                // And we should report "Thoth.Json", "Fable.SimpleJson" way before "Toth.Json"
+                                // "Toth.Json" is a deprecated package with almost no download. It was changed to
+                                // "Thoth.Json" because "toth" is a vulgar abbreviation in English, even if Toth
+                                // the right name of the god of same name in french
+
+                                let scoreA =
+                                    packageA.score
+                                    // Make 1 aim for perfect match
+                                    |> Option.map (fun score -> score * -1.0)
+                                    // We should always have a score because we configured Fuse to return it
+                                    |> Option.get
+
+                                let scoreB =
+                                    packageB.score
+                                    // Make 1 aim for perfect match
+                                    |> Option.map (fun score -> score * -1.0)
+                                    // We should always have a score because we configured Fuse to return it
+                                    |> Option.get
+
+                                let totalDownloadsA =
+                                    packageA.item.Package.TotalDownloads
+                                    |> Option.map float
+                                    |> Option.get
+
+                                let totalDownloadsB =
+                                    packageB.item.Package.TotalDownloads
+                                    |> Option.map float
+                                    |> Option.get
+
+                                // The formula has been made in an empirical way
+                                // We need to multiply the score value in order to give it more weight
+                                // And we need to divide the total downloads by a reference value in order to give it less weight
+
+                                let sortReferenceA =
+                                    scoreA * 10000.0 + totalDownloadsA / 100.0
+
+                                let sortReferenceB =
+                                    scoreB * 10000.0 + totalDownloadsB / 100.0
+
+                                compare sortReferenceA sortReferenceB * -1
+                            | SortBy.Downloads ->
+                                compare
+                                    packageA.item.Package.TotalDownloads
+                                    packageB.item.Package.TotalDownloads
+                                * -1
+                            | SortBy.RecentlyUpdated ->
+                                compare
+                                    packageA.item.LastVersionInfo.Published
+                                    packageB.item.LastVersionInfo.Published
+                                * -1
+                        )
+                        |> Seq.map (fun fuseResult -> fuseResult.item)
+
+                setMatchedPackages (ResizeArray result)
             , [|
                 box indexedPackages
                 box activeSearchOptions
@@ -182,7 +256,7 @@ type Components with
 type Pages with
 
     [<ReactComponent>]
-    static member Search(parameters : Router.SearchParameters option) =
+    static member Search(parameters: Router.SearchParameters option) =
         let currentSteps, setCurrentSteps = React.useState IndexingInProgress
 
         match currentSteps with

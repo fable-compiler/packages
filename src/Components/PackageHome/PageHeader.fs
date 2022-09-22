@@ -62,7 +62,7 @@ type Components with
         ]
 
     [<ReactComponent>]
-    static member private Tags(tags: (string list) option) =
+    static member private Tags(tags: (string array) option) =
         match tags with
         | None -> null
         | Some tags ->

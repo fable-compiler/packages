@@ -11,3 +11,11 @@ module Decode =
 
             Decode.string |> Decode.map List.singleton
         ]
+
+    let stringOrStringArrayDecoder: Decoder<string array> =
+
+        Decode.oneOf [
+            Decode.array Decode.string
+
+            Decode.string |> Decode.map Array.singleton
+        ]

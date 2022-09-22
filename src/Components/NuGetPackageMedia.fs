@@ -21,7 +21,7 @@ let private MarkdownContent (content: string) = React.imported ()
 type Components with
 
     [<ReactComponent>]
-    static member private NuGetPackageMediaTags(tags: (string list) option) =
+    static member private NuGetPackageMediaTags(tags: (string array) option) =
         match tags with
         | Some tags ->
             Bulma.tags [

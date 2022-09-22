@@ -14,3 +14,4 @@ Fable.Promise
 FsToolkit.ErrorHandling
 FsToolkit.ErrorHandling.AsyncSeq
 Fable.Browser.Url
+Glutinum.Fuse

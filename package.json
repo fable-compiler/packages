@@ -14,6 +14,7 @@
     "clipboard": "^2.0.11",
     "date-fns": "^2.29.3",
     "fable-form-simple-bulma": "^1.0.0",
+    "fuse.js": "^6.6.2",
     "lucide-react": "^0.89.0",
     "nacara-layout-standard": "^1.7.0",
     "react": "^17.0.2",

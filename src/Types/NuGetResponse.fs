@@ -70,7 +70,7 @@ module V3 =
             /// </summary>
             Registration : string option
             Summary : string option
-            Tags : (string list) option
+            Tags : (string array) option
             Title : string option
             /// <summary>
             /// This value can be inferred by the sum of downloads in the <c>versions</c> array
@@ -101,7 +101,7 @@ module V3 =
                     ProjectUrl = get.Optional.Field "projectUrl" Decode.string
                     Registration = get.Optional.Field "registration" Decode.string
                     Summary = get.Optional.Field "summary" Decode.string
-                    Tags = get.Optional.Field "tags" Decode.stringOrStringListDecoder
+                    Tags = get.Optional.Field "tags" Decode.stringOrStringArrayDecoder
                     Title = get.Optional.Field "title" Decode.string
                     TotalDownloads = get.Optional.Field "totalDownloads" Decode.int64
                     Verified = get.Optional.Field "verified" Decode.bool
@@ -223,7 +223,7 @@ module V3 =
                     Published: DateTime option
                     RequireLicenseAcceptance: bool option
                     Summary: string option
-                    Tags: (string list) option
+                    Tags: (string array) option
                     Title: string option
                     Version: string
                 // Vulnerabilities : obj array
@@ -245,7 +245,7 @@ module V3 =
                                 get.Optional.Field "description" Decode.string
                             IconUrl =
                                 get.Optional.Field
-                                    "icodzdzdzdnUrl"
+                                    "iconUrl"
                                     Decode.string
                             Id = get.Required.Field "id" Decode.string
                             LicenseUrl =
@@ -271,7 +271,7 @@ module V3 =
                             Tags =
                                 get.Optional.Field
                                     "tags"
-                                    Decode.stringOrStringListDecoder
+                                    Decode.stringOrStringArrayDecoder
                             Title = get.Optional.Field "title" Decode.string
                             Version = get.Required.Field "version" Decode.string
                         }

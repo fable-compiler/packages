@@ -22,6 +22,7 @@ nuget Fable.Promise
 nuget FsToolkit.ErrorHandling
 nuget FsToolkit.ErrorHandling.AsyncSeq
 nuget Fable.Browser.Url
+nuget Glutinum.Fuse
 
 github fable-compiler/fable-compiler.github.io:dev docs/scss/utilities.scss
 github fsprojects/Paket src/Paket.Core/Versioning/VersionRange.fs
