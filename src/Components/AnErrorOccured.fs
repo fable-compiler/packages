@@ -42,7 +42,7 @@ type Components with
                                         color.isLight
                                         prop.text "Return to Home"
                                         prop.href (
-                                            Router.toUrl Router.Page.Search
+                                            Router.toUrl (Router.Page.Search None)
                                         )
                                     ]
                                     Bulma.button.a [
@@ -80,7 +80,7 @@ type Components with
                                         color.isLight
                                         prop.text "Return to Home"
                                         prop.href (
-                                            Router.toUrl Router.Page.Search
+                                            Router.toUrl (Router.Page.Search None)
                                         )
                                     ]
                                     Bulma.button.a [

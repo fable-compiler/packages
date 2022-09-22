@@ -4,7 +4,9 @@ open Fable.Core.JsInterop
 open Feliz
 open Feliz.Bulma
 open Feliz.UseElmish
+open Feliz.Router
 open Elmish
+open Fable.Packages
 open Fable.Packages.Types
 
 // Workaround to have React-refresh working
@@ -22,7 +24,70 @@ type private Msg =
     | Search
     | Reset
 
-let private init () = SearchOptions.initial, Cmd.none
+let private init
+    (urlParameters: Router.SearchParameters option)
+    (onSearch: SearchOptions -> unit)
+    =
+    match urlParameters with
+    | Some urlParameters ->
+        let initialModel = {
+            TextField = ""
+            Targets =
+                Set.ofList [
+                    if urlParameters.TargetDotnet then
+                        Target.Dotnet
+                    if urlParameters.TargetJavaScript then
+                        Target.JavaScript
+                    if urlParameters.TargetRust then
+                        Target.Rust
+                    if urlParameters.TargetPython then
+                        Target.Python
+                    if urlParameters.TargetDart then
+                        Target.Dart
+                    if urlParameters.TargetAll then
+                        Target.All
+                ]
+            PackageTypes =
+                Set.ofList [
+                    if urlParameters.SearchForBindings then
+                        PackageType.Binding
+                    if urlParameters.SearchForLibraries then
+                        PackageType.Library
+                ]
+            SortBy = urlParameters.SortBy
+            Options =
+                Set.ofList [
+                    if urlParameters.IncludePrerelease then
+                        NuGetOption.IncludePreRelease
+                ]
+        }
+
+        initialModel, Cmd.OfFunc.exec onSearch initialModel
+
+    | None -> SearchOptions.initial, Cmd.none
+
+let private updateUrl (searchOptions: SearchOptions) =
+    let newUrl =
+        {|
+            TargetDotnet = searchOptions.Targets.Contains Target.Dotnet
+            TargetJavaScript = searchOptions.Targets.Contains Target.JavaScript
+            TargetRust = searchOptions.Targets.Contains Target.Rust
+            TargetPython = searchOptions.Targets.Contains Target.Python
+            TargetDart = searchOptions.Targets.Contains Target.Dart
+            TargetAll = searchOptions.Targets.Contains Target.All
+            SearchForBindings =
+                searchOptions.PackageTypes.Contains PackageType.Binding
+            SearchForLibraries =
+                searchOptions.PackageTypes.Contains PackageType.Library
+            SortBy = searchOptions.SortBy
+            IncludePrerelease =
+                searchOptions.Options.Contains NuGetOption.IncludePreRelease
+        |}
+        |> Some
+        |> Router.Page.Search
+        |> Router.toUrl
+
+    Router.navigate (newUrl, HistoryMode.PushState)
 
 let private update (onSearch: SearchOptions -> unit) (msg: Msg) (model: Model) =
     match msg with
@@ -59,11 +124,22 @@ let private update (onSearch: SearchOptions -> unit) (msg: Msg) (model: Model) =
     | Reset ->
         let newModel = SearchOptions.initial
 
-        newModel, Cmd.OfFunc.exec onSearch newModel
+        newModel,
+        Cmd.batch [
+            Cmd.OfFunc.exec onSearch newModel
+            Cmd.OfFunc.exec updateUrl newModel
+        ]
 
-    | Search -> model, Cmd.OfFunc.exec onSearch model
+    | Search ->
+        model,
+        Cmd.batch [
+            Cmd.OfFunc.exec onSearch model
+            Cmd.OfFunc.exec updateUrl model
+        ]
 
-type SearchFormProps = {| OnSearch: SearchOptions -> unit |}
+type SearchFormProps =
+    {| OnSearch: SearchOptions -> unit
+       UrlParameters: Router.SearchParameters option |}
 
 type Components with
 
@@ -370,7 +446,11 @@ type Components with
     [<ReactComponent>]
     static member SearchForm(props: SearchFormProps) =
         let model, dispatch =
-            React.useElmish (init, update props.OnSearch, [||])
+            React.useElmish (
+                init props.UrlParameters props.OnSearch,
+                update props.OnSearch,
+                [||]
+            )
 
         Html.div [
             Components.SearchInputField model dispatch

@@ -24,7 +24,8 @@ let App () =
 
     let pageElement =
         match page with
-        | Router.Page.Search -> Pages.Search()
+        | Router.Page.Search parameters ->
+            Pages.Search parameters
 
         | Router.Page.Package parameters ->
             Pages.PackageHome

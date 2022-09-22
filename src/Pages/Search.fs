@@ -4,6 +4,7 @@ open Feliz
 open Feliz.Bulma
 open Feliz.UseDeferred
 open Fable.Packages.Types
+open Fable.Packages
 open Fable.Packages.Types.CompositeTypes
 open Fable.Packages.Components
 open Fable.Packages.Components.SearchForm
@@ -71,10 +72,14 @@ type Components with
     [<ReactComponent>]
     static member private ShowSearchFormAndResults
         (indexedPackages: ResizeArray<IndexedNuGetPackage>)
+        (urlParameters : Router.SearchParameters option)
         =
+        let initialSearchOptions =
+
+                SearchOptions.initial
 
         let activeSearchOptions, setActiveSearchOptions =
-            React.useState SearchOptions.initial
+            React.useState initialSearchOptions
 
         let elementsPerPage = 10
         // Store the current page displayed
@@ -134,6 +139,7 @@ type Components with
                 Components.SearchForm
                     {|
                         OnSearch = onSearch
+                        UrlParameters = urlParameters
                     |}
             ]
 
@@ -176,7 +182,7 @@ type Components with
 type Pages with
 
     [<ReactComponent>]
-    static member Search() =
+    static member Search(parameters : Router.SearchParameters option) =
         let currentSteps, setCurrentSteps = React.useState IndexingInProgress
 
         match currentSteps with
@@ -186,4 +192,4 @@ type Pages with
             )
 
         | Ready indexedPackages ->
-            Components.ShowSearchFormAndResults indexedPackages
+            Components.ShowSearchFormAndResults indexedPackages parameters
