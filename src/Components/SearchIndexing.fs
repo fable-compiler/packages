@@ -61,7 +61,7 @@ type Components with
         // Using a stale while revalidate strategy could be a good idea, it will give
         // a good boost in performance between visits and we will have the latest version
         // available most of the time
-        let chunkSize = 25
+        let chunkSize = 50
 
         let indexingProgress, setIndexingProgress =
             React.useStateWithUpdater
