@@ -15,6 +15,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Glutinum.Fuse
 open System
+open System.Text.RegularExpressions
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -68,6 +69,25 @@ let private filterByTargets
         // Discard that package
         | None -> false
 
+let private filterByTags
+    (searchedTags: string list)
+    (package: IndexedNuGetPackage)
+    =
+    // User didn't request a specific package type so no filter is applied
+    // Always return true
+    if searchedTags.IsEmpty then
+        true
+    else
+        match package.Package.Tags with
+        // The packages has some tags, so we can check if it contains
+        // one of the searched package type
+        | Some tags ->
+            searchedTags
+            |> Seq.exists (fun searchedTag -> Array.contains searchedTag tags)
+        // The package doesn't have any tags, so we apply the search on the package type
+        // Discard that package
+        | None -> false
+
 let private filterByTerms
     (searchedText: string)
     (indexedPackages: ResizeArray<IndexedNuGetPackage>)
@@ -84,13 +104,13 @@ let private filterByTerms
                 distance = 50,
                 includeScore = true,
                 threshold = 0.4
-                // A threshold value of 0.4 seems to be the right spot to not
-                // retrieve Fable.Core when searching for "json" term
-                // I think Fable.Core can match "json" term because of "js" tags
+            // A threshold value of 0.4 seems to be the right spot to not
+            // retrieve Fable.Core when searching for "json" term
+            // I think Fable.Core can match "json" term because of "js" tags
             )
         )
 
-    fuse.search (searchedText)
+    fuse.search searchedText
 
 type Components with
 
@@ -117,8 +137,67 @@ type Components with
                     setActiveSearchOptions newSearchOptions
             )
 
+        // // This effect serve to handle urlParameters changes
+        // React.useEffect (
+        //     fun () ->
+        //         let newSearchOptions =
+        //             match urlParameters with
+        //             | Some urlParameters ->
+        //                 {
+        //                     TextField = urlParameters.Query
+        //                     Targets =
+        //                         Set.ofList [
+        //                             if urlParameters.TargetDotnet then
+        //                                 Target.Dotnet
+        //                             if urlParameters.TargetJavaScript then
+        //                                 Target.JavaScript
+        //                             if urlParameters.TargetRust then
+        //                                 Target.Rust
+        //                             if urlParameters.TargetPython then
+        //                                 Target.Python
+        //                             if urlParameters.TargetDart then
+        //                                 Target.Dart
+        //                             if urlParameters.TargetAll then
+        //                                 Target.All
+        //                         ]
+        //                     PackageTypes =
+        //                         Set.ofList [
+        //                             if urlParameters.SearchForBindings then
+        //                                 PackageType.Binding
+        //                             if urlParameters.SearchForLibraries then
+        //                                 PackageType.Library
+        //                         ]
+        //                     SortBy = urlParameters.SortBy
+        //                     Options =
+        //                         Set.ofList [
+        //                             if urlParameters.IncludePrerelease then
+        //                                 NuGetOption.IncludePreRelease
+        //                         ]
+        //                 }
+        //             | None ->
+        //                 SearchOptions.initial
+
+        //         onSearch newSearchOptions
+        //     , [|
+        //         box urlParameters
+        //     |]
+        // )
+
+        // This effect control when the search is triggered
         React.useEffect (
             fun () ->
+                let tagPattern = "tag:(?<tag>[^ ]+)"
+
+                // Get the text to search by without the tags special search
+                let searchedText =
+                    Regex.Replace(activeSearchOptions.TextField, tagPattern, "")
+
+                // Get the list of tags to search by
+                let tags =
+                    Regex.Matches(activeSearchOptions.TextField, tagPattern)
+                    |> Seq.map (fun m -> m.Groups.["tag"].Value)
+                    |> Seq.toList
+
                 let intermediateResult =
                     indexedPackages
                     // Filter by package type
@@ -127,21 +206,22 @@ type Components with
                     )
                     // Filter by target
                     |> Seq.filter (filterByTargets activeSearchOptions.Targets)
+                    // Filter by tags
+                    |> Seq.filter (filterByTags tags)
                     |> ResizeArray
 
                 let result =
-                    if String.IsNullOrEmpty activeSearchOptions.TextField then
+                    if String.IsNullOrEmpty searchedText then
                         intermediateResult
                         |> Seq.sortByDescending (fun package ->
                             match activeSearchOptions.SortBy with
                             | SortBy.Relevance -> package.Package.TotalDownloads
                             | SortBy.Downloads -> package.Package.TotalDownloads
-                            | SortBy.RecentlyUpdated -> Some package.LastVersionInfo.Published.Ticks
+                            | SortBy.RecentlyUpdated ->
+                                Some package.LastVersionInfo.Published.Ticks
                         )
                     else
-                        filterByTerms
-                            activeSearchOptions.TextField
-                            intermediateResult
+                        filterByTerms searchedText intermediateResult
                         |> Seq.sortWith (fun packageA packageB ->
                             match activeSearchOptions.SortBy with
                             | SortBy.Relevance ->

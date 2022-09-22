@@ -3,6 +3,7 @@ namespace Fable.Packages
 open Feliz.Router
 open Fable.Packages.Types
 open Browser.Url
+open System
 
 [<RequireQualifiedAccess>]
 module Router =
@@ -42,6 +43,7 @@ module Router =
         SearchForLibraries: bool
         SortBy: SortBy
         IncludePrerelease: bool
+        Query : string
     |}
 
     module SearchParameters =
@@ -106,6 +108,9 @@ module Router =
                         "includePrerelease"
                         searchParams
                     |> Option.defaultValue true
+                Query =
+                    searchParams.get "query"
+                    |> Option.defaultValue ""
             |}
             |> Some
             |> Page.Search
@@ -140,6 +145,8 @@ module Router =
                     "libraries", string parameters.SearchForLibraries
                     "sortBy", SortBy.toQueryParams parameters.SortBy
                     "includePrerelease", string parameters.IncludePrerelease
+                    if not (String.IsNullOrEmpty parameters.Query) then
+                        "query", parameters.Query
                 ]
             )
         | Page.Package parameters ->

@@ -13,7 +13,7 @@ open Fable.Packages.Types
 // I need to open an issue on react-refresh to see if they can improve the detection
 emitJsStatement () "import React from \"react\""
 
-type Model = SearchOptions
+type private Model = SearchOptions
 
 type private Msg =
     | ToggleTarget of Target
@@ -31,7 +31,7 @@ let private init
     match urlParameters with
     | Some urlParameters ->
         let initialModel = {
-            TextField = ""
+            TextField = urlParameters.Query
             Targets =
                 Set.ofList [
                     if urlParameters.TargetDotnet then
@@ -82,6 +82,7 @@ let private updateUrl (searchOptions: SearchOptions) =
             SortBy = searchOptions.SortBy
             IncludePrerelease =
                 searchOptions.Options.Contains NuGetOption.IncludePreRelease
+            Query = searchOptions.TextField
         |}
         |> Some
         |> Router.Page.Search
@@ -300,90 +301,105 @@ type Components with
                 Bulma.box [
 
                     Bulma.columns [
-                        Components.FormColumn(
-                            "Target",
-                            [
-                                Components.CheckboxTargetField(
-                                    Target.Dotnet,
-                                    model.Targets,
-                                    dispatch
-                                )
-                                Components.CheckboxTargetField(
-                                    Target.JavaScript,
-                                    model.Targets,
-                                    dispatch
-                                )
-                                Components.CheckboxTargetField(
-                                    Target.Rust,
-                                    model.Targets,
-                                    dispatch
-                                )
-                                Components.CheckboxTargetField(
-                                    Target.Python,
-                                    model.Targets,
-                                    dispatch
-                                )
-                                Components.CheckboxTargetField(
-                                    Target.Dart,
-                                    model.Targets,
-                                    dispatch
-                                )
-                                Components.CheckboxTargetField(
-                                    Target.All,
-                                    model.Targets,
-                                    dispatch
-                                )
-                            ]
-                        )
+                        prop.className "is-marginless"
+                        prop.children [
+                            Components.FormColumn(
+                                "Target",
+                                [
+                                    Components.CheckboxTargetField(
+                                        Target.Dotnet,
+                                        model.Targets,
+                                        dispatch
+                                    )
+                                    Components.CheckboxTargetField(
+                                        Target.JavaScript,
+                                        model.Targets,
+                                        dispatch
+                                    )
+                                    Components.CheckboxTargetField(
+                                        Target.Rust,
+                                        model.Targets,
+                                        dispatch
+                                    )
+                                    Components.CheckboxTargetField(
+                                        Target.Python,
+                                        model.Targets,
+                                        dispatch
+                                    )
+                                    Components.CheckboxTargetField(
+                                        Target.Dart,
+                                        model.Targets,
+                                        dispatch
+                                    )
+                                    Components.CheckboxTargetField(
+                                        Target.All,
+                                        model.Targets,
+                                        dispatch
+                                    )
+                                ]
+                            )
 
-                        Components.FormColumn(
-                            "Package type",
-                            [
-                                Components.CheckboxPackageTypeField(
-                                    PackageType.Binding,
-                                    model.PackageTypes,
-                                    dispatch
-                                )
-                                Components.CheckboxPackageTypeField(
-                                    PackageType.Library,
-                                    model.PackageTypes,
-                                    dispatch
-                                )
-                            ]
-                        )
+                            Components.FormColumn(
+                                "Package type",
+                                [
+                                    Components.CheckboxPackageTypeField(
+                                        PackageType.Binding,
+                                        model.PackageTypes,
+                                        dispatch
+                                    )
+                                    Components.CheckboxPackageTypeField(
+                                        PackageType.Library,
+                                        model.PackageTypes,
+                                        dispatch
+                                    )
+                                ]
+                            )
 
-                        Components.FormColumn(
-                            "Sort by",
-                            [
-                                Components.CheckradioSortByField(
-                                    SortBy.Relevance,
-                                    model.SortBy,
-                                    dispatch
-                                )
-                                Components.CheckradioSortByField(
-                                    SortBy.Downloads,
-                                    model.SortBy,
-                                    dispatch
-                                )
-                                Components.CheckradioSortByField(
-                                    SortBy.RecentlyUpdated,
-                                    model.SortBy,
-                                    dispatch
-                                )
-                            ]
-                        )
+                            Components.FormColumn(
+                                "Sort by",
+                                [
+                                    Components.CheckradioSortByField(
+                                        SortBy.Relevance,
+                                        model.SortBy,
+                                        dispatch
+                                    )
+                                    Components.CheckradioSortByField(
+                                        SortBy.Downloads,
+                                        model.SortBy,
+                                        dispatch
+                                    )
+                                    Components.CheckradioSortByField(
+                                        SortBy.RecentlyUpdated,
+                                        model.SortBy,
+                                        dispatch
+                                    )
+                                ]
+                            )
 
-                        Components.FormColumn(
-                            "Options",
-                            [
-                                Components.CheckboxOptionField(
-                                    NuGetOption.IncludePreRelease,
-                                    model.Options,
-                                    dispatch
-                                )
-                            ]
-                        )
+                            Components.FormColumn(
+                                "Options",
+                                [
+                                    Components.CheckboxOptionField(
+                                        NuGetOption.IncludePreRelease,
+                                        model.Options,
+                                        dispatch
+                                    )
+                                ]
+                            )
 
+                        ]
+                    ]
+
+                    Bulma.text.div [
+                        spacing.mb3
+                        text.isItalic
+                        prop.children [
+                            Html.text "You can search a tag by writing "
+                            Html.code [
+                                prop.text "tag:tagname"
+                            ]
+                            Html.text " in the search box."
+                        ]
                     ]
 
                     Bulma.field.div [
@@ -449,7 +465,9 @@ type Components with
             React.useElmish (
                 init props.UrlParameters props.OnSearch,
                 update props.OnSearch,
-                [||]
+                [|
+                    box props.UrlParameters
+                |]
             )
 
         Html.div [

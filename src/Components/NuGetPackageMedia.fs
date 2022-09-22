@@ -28,11 +28,17 @@ type Components with
                 spacing.mt3
                 prop.children [
                     for tag in tags do
+                        let url =
+                            {| Router.SearchParameters.initial with
+                                Query = $"tag:%s{tag}"
+                            |}
+                            |> Some
+                            |> Router.Page.Search
+                            |> Router.toUrl
+
                         Html.a [
                             prop.className "tag is-link is-primary is-light"
-                            prop.onClick (fun _ ->
-                                printfn "TODO: Implements search by tag"
-                            )
+                            prop.href url
                             prop.text tag
                         ]
                 ]
