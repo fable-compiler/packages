@@ -35,6 +35,7 @@
     <Compile Include="Components/PackageHome/Readme.fs" />
     <Compile Include="Components/PackageHome/ReleaseNotes.fs" />
     <Compile Include="Components/PackageHome/License.fs" />
+    <Compile Include="Components/PackageHome/InstallationInstructions.fs" />
     <Compile Include="Pages/Pages.fs" />
     <Compile Include="Pages/NotFound.fs" />
     <Compile Include="Pages/Search.fs" />

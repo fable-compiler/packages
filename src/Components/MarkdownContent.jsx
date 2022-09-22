@@ -1,5 +1,4 @@
 import React from 'react'
-import ReactDom from 'react-dom'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import oneLight from './one-light'

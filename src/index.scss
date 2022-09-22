@@ -15,6 +15,7 @@ $content-block-margin-bottom: 1.25rem;
 @import "../node_modules/bulma/sass/utilities/_all.sass";
 @import "./../node_modules/bulma/bulma.sass";
 @import "./../node_modules/nacara-layout-standard/scss/nacara.scss";
+@import "./../node_modules/@creativebulma/bulma-tooltip/src/sass/index.sass";
 
 // Begin gatsby-remark-vscode specific
 :root {
@@ -205,4 +206,74 @@ input[type="radio"] {
 
 .main-body {
     width: inherit;
+}
+
+
+.package-home-installation-methods-tabs {
+    @include until(500px) {
+        .tabs ul {
+            flex-direction: column;
+
+            li {
+                width: 100%;
+            }
+        }
+    }
+
+    .tabs ul {
+        flex-shrink: 1;
+        flex-wrap: wrap;
+    }
+
+    .tabs.is-toggle li:first-child a{
+        border-bottom-left-radius: 0;
+    }
+
+    .tabs.is-toggle li:last-child a{
+        border-bottom-right-radius: 0;
+    }
+}
+
+.package-home-installation-methods-tab-body {
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    // Hack to make the copy-button full height
+    // This specific value seems to fit perfectly the pre > code height
+    height: 4.35rem;
+    margin-bottom: 3rem;
+
+    // For extra small screens
+    @include until(500px) {
+        flex-direction: column;
+        justify-content: unset;
+        align-items: unset;
+        margin-bottom: 6rem;
+    }
+
+    li.is-active {
+        color: $primary;
+    }
+
+    pre {
+        box-shadow: unset;
+        border-top: unset;
+
+        code {
+            font-weight: $weight-semibold;
+        }
+    }
+
+    .instruction-preview {
+        flex: 1;
+    }
+
+    .copy-instruction {
+        // background-color: $success;
+        // padding: 0 1rem;
+        height: 100%;
+        border-radius: 0;
+    }
 }

@@ -13,7 +13,7 @@ open Feliz.ReactMarkdown
 emitJsStatement () "import React from \"react\""
 
 [<ReactComponent(import = "default", from = "../MarkdownContent.jsx")>]
-let MarkdownContent (content: string) = React.imported ()
+let private MarkdownContent (content: string) = React.imported ()
 
 type Components with
 

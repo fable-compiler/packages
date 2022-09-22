@@ -14,6 +14,7 @@ open Fable.Packages.Components.PackageHome.Dependencies
 open Fable.Packages.Components.PackageHome.Readme
 open Fable.Packages.Components.PackageHome.ReleaseNotes
 open Fable.Packages.Components.PackageHome.License
+open Fable.Packages.Components.PackageHome.InstallationInstructions
 open Fable.SimpleHttp
 open Thoth.Json
 open Fable.Core.JsInterop
@@ -57,6 +58,12 @@ type private Tab =
     | Versions
     | ReleaseNotes
     | License
+
+[<RequireQualifiedAccess>]
+type private LicenseInfo =
+    | File of string
+    | Expression of string
+    | Unkown of string
 
 type Components with
 
@@ -221,12 +228,6 @@ let private tryExtractReleaseNotes (entries: IEntry array) = promise {
         return releaseNotes
     | None -> return None
 }
-
-[<RequireQualifiedAccess>]
-type LicenseInfo =
-    | File of string
-    | Expression of string
-    | Unkown of string
 
 let private retrieveLicenseFile (entries: IEntry array) (licensePath: string) = asyncResult {
     let entry =
@@ -540,9 +541,15 @@ type Pages with
         | Deferred.Resolved (Error error) -> Components.Errored error
 
         | Deferred.Resolved (Ok info) ->
+            // If the user didn't request a specific version, we show the latest version
+            // Otherwise, we show the requested version
+            let displayedVersion =
+                props.PackageVersion |> Option.defaultValue info.Package.Version
+
             Html.div [
                 Bulma.section [
-                    Components.PageHeader info.Package props.PackageVersion
+                    Components.PageHeader info.Package displayedVersion
+                    Components.InstallationInstructions(info.Package.Id, displayedVersion)
                     Components.TabsHeader(activeTab, setActiveTab)
                     Components.TabBody(activeTab, info)
                 ]
