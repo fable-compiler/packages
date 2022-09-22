@@ -15,6 +15,7 @@ open Fable.Packages.Components.PackageHome.Readme
 open Fable.Packages.Components.PackageHome.ReleaseNotes
 open Fable.Packages.Components.PackageHome.License
 open Fable.Packages.Components.PackageHome.InstallationInstructions
+open Fable.Packages.Components.PackageHome.Metadata
 open Fable.SimpleHttp
 open Thoth.Json
 open Fable.Core.JsInterop
@@ -41,7 +42,8 @@ type private PackageFoundInfo = {
     Versions: V3.CatalogRoot.CatalogPage.Package list
     Readme: string option
     ReleaseNotes: string option
-    License : LicenseType option
+    License: LicenseType option
+    Nuspec: string
 }
 
 [<RequireQualifiedAccess>]
@@ -169,10 +171,16 @@ type Components with
         ]
 
     [<ReactComponent>]
-    static member private TabBody(activeTab: Tab, info: PackageFoundInfo) =
+    static member private TabBody
+        (
+            activeTab: Tab,
+            info: PackageFoundInfo,
+            displayedVersion: string
+        ) =
         Html.div [
             prop.className "tab-body box"
             prop.children [
+                // Left section - Dynamic content
                 match activeTab with
                 | Tab.Readme -> Components.Readme info.Readme
                 | Tab.Dependencies ->
@@ -182,8 +190,10 @@ type Components with
                         info.Package.Version
                 | Tab.Versions -> Components.Versions info.Package info.Versions
                 | Tab.ReleaseNotes -> Components.ReleaseNotes info.ReleaseNotes
-                | Tab.License ->
-                    Components.License info.License
+                | Tab.License -> Components.License info.License
+
+                // Right section - Static content (metadata)
+                Components.Metadata(info.Package, displayedVersion, info.Nuspec)
             ]
         ]
 
@@ -205,28 +215,17 @@ type Components with
     static member private Errored(message: string) =
         Components.AnErrorOccured("An unexpected error occured", message)
 
-let private tryExtractReleaseNotes (entries: IEntry array) = promise {
-    let nuspecEntry =
-        entries
-        |> Array.tryFind (fun entry ->
-            entry.filename.ToLowerInvariant().EndsWith(".nuspec")
-        )
+let private tryExtractReleaseNotes (nuspecContent: string) = promise {
+    let xmlDocument = SimpleXml.parseDocument nuspecContent
 
-    match nuspecEntry with
-    | Some nuspecEntry ->
-        let! content = nuspecEntry.getDataString (zip.createStringWriter ())
+    let releaseNotes =
+        xmlDocument.Root
+        |> SimpleXml.tryFindElementByName "metadata"
+        |> Option.map (SimpleXml.tryFindElementByName "releaseNotes")
+        |> Option.flatten
+        |> Option.map (fun xmlElement -> xmlElement.Content)
 
-        let xmlDocument = SimpleXml.parseDocument content
-
-        let releaseNotes =
-            xmlDocument.Root
-            |> SimpleXml.tryFindElementByName "metadata"
-            |> Option.map (SimpleXml.tryFindElementByName "releaseNotes")
-            |> Option.flatten
-            |> Option.map (fun xmlElement -> xmlElement.Content)
-
-        return releaseNotes
-    | None -> return None
+    return releaseNotes
 }
 
 let private retrieveLicenseFile (entries: IEntry array) (licensePath: string) = asyncResult {
@@ -238,7 +237,9 @@ let private retrieveLicenseFile (entries: IEntry array) (licensePath: string) = 
 
     match entry with
     | None ->
-        return! Error $"Could not find the license file in the package. License path: '%s{licensePath}'"
+        return!
+            Error
+                $"Could not find the license file in the package. License path: '%s{licensePath}'"
 
     | Some entry ->
         let! content =
@@ -248,7 +249,7 @@ let private retrieveLicenseFile (entries: IEntry array) (licensePath: string) = 
         return content
 }
 
-let private tryExtractLicense (entries: IEntry array) = asyncResult {
+let private extractNuspecContent (entries: IEntry array) = asyncResult {
     let nuspecEntry =
         entries
         |> Array.tryFind (fun entry ->
@@ -261,38 +262,43 @@ let private tryExtractLicense (entries: IEntry array) = asyncResult {
             nuspecEntry.getDataString (zip.createStringWriter ())
             |> Async.AwaitPromise
 
-        let xmlDocument = SimpleXml.parseDocument content
+        return content
 
-        let licenseInfo = option {
-            let! licenseElement =
-                xmlDocument.Root
-                |> SimpleXml.tryFindElementByName "metadata"
-                |> Option.map (SimpleXml.tryFindElementByName "license")
-                |> Option.flatten
+    | None -> return! Error "Could not find a nuspec file in the package"
+}
 
-            let! licenseTypeAttr = Map.tryFind "type" licenseElement.Attributes
+let private tryExtractLicense (nuspecContent: string) (entries: IEntry array) = asyncResult {
 
-            if licenseTypeAttr = "file" then
-                return LicenseInfo.File licenseElement.Content
-            else if licenseTypeAttr = "expression" then
-                return LicenseInfo.Expression licenseElement.Content
-            else
-                return LicenseInfo.Unkown licenseTypeAttr
-        }
+    let xmlDocument = SimpleXml.parseDocument nuspecContent
 
-        match licenseInfo with
-        | Some (LicenseInfo.Expression expression) ->
-            return Some (LicenseType.Expression expression)
+    let licenseInfo = option {
+        let! licenseElement =
+            xmlDocument.Root
+            |> SimpleXml.tryFindElementByName "metadata"
+            |> Option.map (SimpleXml.tryFindElementByName "license")
+            |> Option.flatten
 
-        | Some (LicenseInfo.File file) ->
-            let! licenseText = retrieveLicenseFile entries file
+        let! licenseTypeAttr = Map.tryFind "type" licenseElement.Attributes
 
-            return Some (LicenseType.File licenseText)
+        if licenseTypeAttr = "file" then
+            return LicenseInfo.File licenseElement.Content
+        else if licenseTypeAttr = "expression" then
+            return LicenseInfo.Expression licenseElement.Content
+        else
+            return LicenseInfo.Unkown licenseTypeAttr
+    }
 
-        | Some (LicenseInfo.Unkown unkownType) ->
-            return! Error $"Unkown license type '%s{unkownType}'"
-        | None -> return None
+    match licenseInfo with
+    | Some (LicenseInfo.Expression expression) ->
+        return Some(LicenseType.Expression expression)
 
+    | Some (LicenseInfo.File file) ->
+        let! licenseText = retrieveLicenseFile entries file
+
+        return Some(LicenseType.File licenseText)
+
+    | Some (LicenseInfo.Unkown unkownType) ->
+        return! Error $"Unkown license type '%s{unkownType}'"
     | None -> return None
 }
 
@@ -485,10 +491,12 @@ let private fetchPackageInfo
 
         let! readmeOpt = tryExtractReadme packageContent |> Async.AwaitPromise
 
-        let! licenseOpt = tryExtractLicense packageContent
+        let! nuspecContent = extractNuspecContent packageContent
+
+        let! licenseOpt = tryExtractLicense nuspecContent packageContent
 
         let! releaseNoteOpt =
-            tryExtractReleaseNotes packageContent |> Async.AwaitPromise
+            tryExtractReleaseNotes nuspecContent |> Async.AwaitPromise
 
         return {
             Package = searchResponse.Data.Head
@@ -496,6 +504,7 @@ let private fetchPackageInfo
             Readme = readmeOpt
             ReleaseNotes = releaseNoteOpt
             License = licenseOpt
+            Nuspec = nuspecContent
         }
     }
 
@@ -543,9 +552,12 @@ type Pages with
             Html.div [
                 Bulma.section [
                     Components.PageHeader info.Package displayedVersion
-                    Components.InstallationInstructions(info.Package.Id, displayedVersion)
-                    Html.hr [ ]
+                    Components.InstallationInstructions(
+                        info.Package.Id,
+                        displayedVersion
+                    )
+                    Html.hr []
                     Components.TabsHeader(activeTab, setActiveTab)
-                    Components.TabBody(activeTab, info)
+                    Components.TabBody(activeTab, info, displayedVersion)
                 ]
             ]
