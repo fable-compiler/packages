@@ -544,6 +544,7 @@ type Pages with
                 Bulma.section [
                     Components.PageHeader info.Package displayedVersion
                     Components.InstallationInstructions(info.Package.Id, displayedVersion)
+                    Html.hr [ ]
                     Components.TabsHeader(activeTab, setActiveTab)
                     Components.TabBody(activeTab, info)
                 ]

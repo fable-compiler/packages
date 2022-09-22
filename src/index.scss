@@ -243,7 +243,6 @@ input[type="radio"] {
     // Hack to make the copy-button full height
     // This specific value seems to fit perfectly the pre > code height
     height: 4.35rem;
-    margin-bottom: 3rem;
 
     // For extra small screens
     @include until(500px) {
