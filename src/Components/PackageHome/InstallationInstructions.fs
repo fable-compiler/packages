@@ -13,11 +13,8 @@ open Feliz.Lucide
 // I need to open an issue on react-refresh to see if they can improve the detection
 emitJsStatement () "import React from \"react\""
 
-
-[<ReactComponent(import="default", from="./CopyInstruction.jsx")>]
-let private CopyButton(value : string) =
-    React.imported()
-
+[<ReactComponent(import = "default", from = "./CopyInstruction.jsx")>]
+let private CopyButton (value: string) = React.imported ()
 
 type private InstallationMethod =
     | PackageManager
@@ -105,8 +102,7 @@ type Components with
                 $"dotnet add package %s{packageId} --version %s{version}"
             | PackageReference ->
                 $"<PackageReference Include=\"%s{packageId}\" Version=\"%s{version}\" />"
-            | PaketCli ->
-                $"paket add %s{packageId} --version %s{version}"
+            | PaketCli -> $"paket add %s{packageId} --version %s{version}"
 
         Html.div [
             prop.className "package-home-installation-methods-tab-body"
@@ -121,15 +117,6 @@ type Components with
                         ]
                     ]
                 ]
-                // Bulma.button.button [
-                //     prop.className "copy-instruction"
-                //     color.isPrimary
-                //     prop.children [
-                //         Lucide.Copy [
-                //             lucide.size 24
-                //         ]
-                //     ]
-                // ]
                 CopyButton instruction
             ]
         ]

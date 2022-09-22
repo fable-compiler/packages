@@ -84,7 +84,28 @@ let private filterByTags
         | Some tags ->
             searchedTags
             |> Seq.exists (fun searchedTag -> Array.contains searchedTag tags)
-        // The package doesn't have any tags, so we apply the search on the package type
+        // The package doesn't have any tags, so we can't apply the search on the package type
+        // Discard that package
+        | None -> false
+
+let private filterByOwners
+    (searchedOwners: string list)
+    (package: IndexedNuGetPackage)
+    =
+    // User didn't request a specific package type so no filter is applied
+    // Always return true
+    if searchedOwners.IsEmpty then
+        true
+    else
+        match package.Package.Owners with
+        // The packages has some owners, so we can check if it contains
+        // one of the searched package type
+        | Some owners ->
+            searchedOwners
+            |> Seq.exists (fun searchedOwner ->
+                List.contains searchedOwner owners
+            )
+        // The package doesn't have any owners, so we can't apply the search on the package type
         // Discard that package
         | None -> false
 
@@ -137,65 +158,34 @@ type Components with
                     setActiveSearchOptions newSearchOptions
             )
 
-        // // This effect serve to handle urlParameters changes
-        // React.useEffect (
-        //     fun () ->
-        //         let newSearchOptions =
-        //             match urlParameters with
-        //             | Some urlParameters ->
-        //                 {
-        //                     TextField = urlParameters.Query
-        //                     Targets =
-        //                         Set.ofList [
-        //                             if urlParameters.TargetDotnet then
-        //                                 Target.Dotnet
-        //                             if urlParameters.TargetJavaScript then
-        //                                 Target.JavaScript
-        //                             if urlParameters.TargetRust then
-        //                                 Target.Rust
-        //                             if urlParameters.TargetPython then
-        //                                 Target.Python
-        //                             if urlParameters.TargetDart then
-        //                                 Target.Dart
-        //                             if urlParameters.TargetAll then
-        //                                 Target.All
-        //                         ]
-        //                     PackageTypes =
-        //                         Set.ofList [
-        //                             if urlParameters.SearchForBindings then
-        //                                 PackageType.Binding
-        //                             if urlParameters.SearchForLibraries then
-        //                                 PackageType.Library
-        //                         ]
-        //                     SortBy = urlParameters.SortBy
-        //                     Options =
-        //                         Set.ofList [
-        //                             if urlParameters.IncludePrerelease then
-        //                                 NuGetOption.IncludePreRelease
-        //                         ]
-        //                 }
-        //             | None ->
-        //                 SearchOptions.initial
-
-        //         onSearch newSearchOptions
-        //     , [|
-        //         box urlParameters
-        //     |]
-        // )
-
         // This effect control when the search is triggered
         React.useEffect (
             fun () ->
                 let tagPattern = "tag:(?<tag>[^ ]+)"
+                let ownerPattern = "owner:(?<owner>[^ ]+)"
 
                 // Get the text to search by without the tags special search
                 let searchedText =
-                    Regex.Replace(activeSearchOptions.TextField, tagPattern, "")
+                    Regex.Replace(
+                        Regex.Replace(
+                            activeSearchOptions.TextField,
+                            tagPattern,
+                            ""
+                        ),
+                        ownerPattern,
+                        ""
+                    )
 
                 // Get the list of tags to search by
                 let tags =
                     Regex.Matches(activeSearchOptions.TextField, tagPattern)
                     |> Seq.map (fun m -> m.Groups.["tag"].Value)
+                    |> Seq.toList
+
+                // Get the list of owners to search by
+                let owners =
+                    Regex.Matches(activeSearchOptions.TextField, ownerPattern)
+                    |> Seq.map (fun m -> m.Groups.["owner"].Value)
                     |> Seq.toList
 
                 let intermediateResult =
@@ -208,6 +198,8 @@ type Components with
                     |> Seq.filter (filterByTargets activeSearchOptions.Targets)
                     // Filter by tags
                     |> Seq.filter (filterByTags tags)
+                    // Filter by owners
+                    |> Seq.filter (filterByOwners owners)
                     |> ResizeArray
 
                 let result =

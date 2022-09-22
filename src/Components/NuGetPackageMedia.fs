@@ -118,13 +118,17 @@ type Components with
                                 prop.text "By: "
                             ]
                             for owner in owners do
+                                let url =
+                                    {| Router.SearchParameters.initial with
+                                        Query = $"owner:%s{owner}"
+                                    |}
+                                    |> Some
+                                    |> Router.Page.Search
+                                    |> Router.toUrl
+
                                 Html.a [
-                                    prop.href nugetPackageUrl
+                                    prop.href url
                                     prop.text owner
-                                    prop.onClick (fun _ ->
-                                        printfn
-                                            "TODO: Implements search by owner"
-                                    )
                                 ]
 
                                 Html.span " "
