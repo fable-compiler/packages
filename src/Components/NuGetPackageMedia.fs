@@ -15,9 +15,8 @@ open Fable.Packages
 // I need to open an issue on react-refresh to see if they can improve the detection
 emitJsStatement () "import React from \"react\""
 
-[<ReactComponent(import="default", from="./MarkdownContent.jsx")>]
-let private MarkdownContent(content : string) =
-    React.imported()
+[<ReactComponent(import = "default", from = "./MarkdownContent.jsx")>]
+let private MarkdownContent (content: string) = React.imported ()
 
 type Components with
 
@@ -137,9 +136,7 @@ type Components with
                     ]
 
                 | Some description ->
-                    Html.p [
-                        MarkdownContent description
-                    ]
+                    MarkdownContent description
             ]
         ]
 
