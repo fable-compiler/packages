@@ -3,10 +3,10 @@ module Fable.Packages.Components.PackageHome.PageHeader
 open Fable.Core.JsInterop
 open Feliz
 open Feliz.Bulma
+open Fable.Packages
 open Fable.Packages.Components
 open Fable.Packages.Components.NuGetPackageMedia
 open Fable.Packages.Types
-open Feliz.ReactMarkdown
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
@@ -71,11 +71,17 @@ type Components with
 
                 prop.children [
                     for tag in tags do
+                        let url =
+                            {| Router.SearchParameters.initial with
+                                Query = $"tag:%s{tag}"
+                            |}
+                            |> Some
+                            |> Router.Page.Search
+                            |> Router.toUrl
+
                         Html.a [
                             prop.className "tag is-link is-primary is-light"
-                            prop.onClick (fun _ ->
-                                printfn "TODO: Implements search by tag"
-                            )
+                            prop.href url
                             prop.text tag
                         ]
                 ]
