@@ -261,8 +261,6 @@ let private tryExtractLicense (entries: IEntry array) = asyncResult {
             nuspecEntry.getDataString (zip.createStringWriter ())
             |> Async.AwaitPromise
 
-        JS.console.log content
-
         let xmlDocument = SimpleXml.parseDocument content
 
         let licenseInfo = option {
@@ -272,11 +270,7 @@ let private tryExtractLicense (entries: IEntry array) = asyncResult {
                 |> Option.map (SimpleXml.tryFindElementByName "license")
                 |> Option.flatten
 
-            JS.console.log(licenseElement)
-
             let! licenseTypeAttr = Map.tryFind "type" licenseElement.Attributes
-
-            JS.console.log(licenseTypeAttr)
 
             if licenseTypeAttr = "file" then
                 return LicenseInfo.File licenseElement.Content
