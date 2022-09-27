@@ -6,6 +6,7 @@ open Feliz.Bulma
 open Feliz.UseDeferred
 open Fable.Packages.Types
 open Fable.Packages.Types.CompositeTypes
+open Fable.Packages.Contexts.NuGetRegistration5Semver1Cache
 open Fable.SimpleHttp
 open Thoth.Json
 open Browser.Dom
@@ -32,6 +33,90 @@ type private FetchPageResult =
 
 type SearchIndexingProps = {| OnReady: V3.SearchResponse.Package list -> unit |}
 
+let private indexPackages
+    (packages: V3.SearchResponse.Package list)
+    (setIndexingProgress: (IndexingProgress -> IndexingProgress) -> unit)
+    =
+    // In the future, we could use a web worker to cache previous request result
+    // In general, a specific package version is not going to be updated often
+    // Using a stale while revalidate strategy could be a good idea, it will give
+    // a good boost in performance between visits and we will have the latest version
+    // available most of the time
+    let chunkSize = 50
+
+    async {
+        let start = System.DateTime.Now
+
+        let batches =
+            packages
+            |> Seq.chunkBySize chunkSize
+            |> Seq.map (fun packages ->
+                packages
+                |> Seq.map (fun package ->
+                    let packageRegistrationUrl =
+                        package.Versions
+                        |> List.tryFind (fun version ->
+                            version.Version = package.Version
+                        )
+                        |> Option.map (fun versionInfo -> versionInfo.Id)
+
+                    match packageRegistrationUrl with
+                    | Some packageRegistrationUrl -> async {
+                        let! response =
+                            Http.request packageRegistrationUrl
+                            |> Http.method GET
+                            |> Http.header (Headers.accept "application/json")
+                            |> Http.send
+
+                        let jsonResult =
+                            Decode.fromString
+                                NuGetRegistration5Semver1.decoder
+                                response.responseText
+
+                        let result =
+                            match jsonResult with
+                            | Ok semverInfo ->
+                                {
+                                    Package = package
+                                    LastVersionInfo = semverInfo
+                                }
+                                |> Ok
+                            | Error errorMessage -> Error errorMessage
+
+                        return result
+                      }
+
+                    | None -> failwith "Package registration url not found"
+                )
+                |> Async.Parallel
+            )
+
+        let indexedPackages = ResizeArray(packages.Length)
+
+        for batch in batches do
+            let! batchResult = batch
+
+            // Update progress
+            setIndexingProgress (fun progress ->
+                { progress with
+                    CurrentPage = progress.CurrentPage + batchResult.Length
+                }
+            )
+
+            for package in batchResult do
+                match package with
+                | Ok package -> indexedPackages.Add package
+                | Error error ->
+                    // TODO: Inform user of potential errors and so missing packages
+                    console.error error
+
+        let finish = System.DateTime.Now
+        let elapsed = finish - start
+        printfn "Elapsed: %A" elapsed.TotalSeconds
+
+        return indexedPackages
+    }
+
 type Components with
 
     static member private DisplayProgressSteps
@@ -55,13 +140,8 @@ type Components with
     static member private IndexingLastPackageVersion
         (packages: V3.SearchResponse.Package list)
         (onCompleted: IndexedNuGetPackage list -> unit)
+
         =
-        // In the future, we could use a web worker to cache previous request result
-        // In general, a specific package version is not going to be updated often
-        // Using a stale while revalidate strategy could be a good idea, it will give
-        // a good boost in performance between visits and we will have the latest version
-        // available most of the time
-        let chunkSize = 50
 
         let indexingProgress, setIndexingProgress =
             React.useStateWithUpdater
@@ -70,77 +150,24 @@ type Components with
                     TotalPages = packages.Length
                 }
 
+        let cache = useNuGetRegistration5Semver1Cache ()
+
         let task = async {
-            let start = System.DateTime.Now
 
-            let batches =
-                packages
-                |> Seq.chunkBySize chunkSize
-                |> Seq.map (fun packages ->
-                    packages
-                    |> Seq.map (fun package ->
-                        let packageRegistrationUrl =
-                            package.Versions
-                            |> List.tryFind (fun version ->
-                                version.Version = package.Version
-                            )
-                            |> Option.map (fun versionInfo -> versionInfo.Id)
+            let cachedValues = cache.GetCache()
 
-                        match packageRegistrationUrl with
-                        | Some packageRegistrationUrl -> async {
-                            let! response =
-                                Http.request packageRegistrationUrl
-                                |> Http.method GET
-                                |> Http.header (
-                                    Headers.accept "application/json"
-                                )
-                                |> Http.send
+            let! indexedPackages =
+                if cachedValues.Count = 0 then
+                    async {
+                        let! indexedPackages =
+                            indexPackages packages setIndexingProgress
 
-                            let jsonResult =
-                                Decode.fromString
-                                    NuGetRegistration5Semver1.decoder
-                                    response.responseText
-
-                            let result =
-                                match jsonResult with
-                                | Ok semverInfo ->
-                                    {
-                                        Package = package
-                                        LastVersionInfo = semverInfo
-                                    }
-                                    |> Ok
-                                | Error errorMessage -> Error errorMessage
-
-                            return result
-                          }
-
-                        | None -> failwith "Package registration url not found"
-                    )
-                    |> Async.Parallel
-                )
-
-            let indexedPackages = ResizeArray(packages.Length)
-
-            for batch in batches do
-                let! batchResult = batch
-
-                // Update progress
-                setIndexingProgress (fun progress ->
-                    { progress with
-                        CurrentPage = progress.CurrentPage + batchResult.Length
+                        cache.SetCache indexedPackages
+                        return indexedPackages
                     }
-                )
+                else
+                    async { return cachedValues }
 
-                for package in batchResult do
-                    match package with
-                    | Ok package -> indexedPackages.Add package
-                    | Error error ->
-                        // TODO: Inform user of potential errors and so missing packages
-                        console.error error
-
-            let finish = System.DateTime.Now
-            let elapsed = finish - start
-            printfn "Elapsed: %A" elapsed.TotalSeconds
             onCompleted (Seq.toList indexedPackages)
         }
 
@@ -221,7 +248,9 @@ type Components with
     /// <param name="onReady"></param>
     /// <returns></returns>
     [<ReactComponent>]
-    static member IndexingPackageList(onCompleted: V3.SearchResponse.Package list -> unit) =
+    static member IndexingPackageList
+        (onCompleted: V3.SearchResponse.Package list -> unit)
+        =
         // At the time of writting there are around 350 pacakges
         // tagged with `fable` using 50 elements per page means
         // we will have to make 7 requests to get all the packages
@@ -275,44 +304,52 @@ type Components with
                 |> Http.header (Headers.accept "application/json")
                 |> Http.send
 
-            return Decode.fromString V3.SearchResponse.decoder response.responseText
+            return
+                Decode.fromString
+                    V3.SearchResponse.decoder
+                    response.responseText
         }
 
-        let rec fetchAllPages (currentPage: int) (packages: V3.SearchResponse.Package list) = async {
-            let! currentPageResult = fetchPage currentPage
+        let rec fetchAllPages
+            (currentPage: int)
+            (packages: V3.SearchResponse.Package list)
+            =
+            async {
+                let! currentPageResult = fetchPage currentPage
 
-            match currentPageResult with
-            | Ok pageResult ->
-                let totalPage =
-                    Helpers.computateTotalPageCount
-                        pageResult.TotalHits
-                        elementsPerPage
+                match currentPageResult with
+                | Ok pageResult ->
+                    let totalPage =
+                        Helpers.computateTotalPageCount
+                            pageResult.TotalHits
+                            elementsPerPage
 
-                setIndexingProgress
-                    {
-                        CurrentPage = currentPage
-                        TotalPages = totalPage
-                    }
+                    setIndexingProgress
+                        {
+                            CurrentPage = currentPage
+                            TotalPages = totalPage
+                        }
 
-                let newPackages = packages @ pageResult.Data
+                    let newPackages = packages @ pageResult.Data
 
-                if newPackages.Length > maximumPackages then
-                    return FetchPageResult.MaximumPackagesReached
-                else if currentPage >= totalPage then
-                    let packages =
-                        packages
-                        // Make sure we have no duplicates
-                        // This is a preventive measure because of inconsistent
-                        // ordering from NuGet API.
-                        // When the bug is fixed on their side, we should be able to remove this.
-                        |> List.distinctBy (fun package -> package.Id)
+                    if newPackages.Length > maximumPackages then
+                        return FetchPageResult.MaximumPackagesReached
+                    else if currentPage >= totalPage then
+                        let packages =
+                            packages
+                            // Make sure we have no duplicates
+                            // This is a preventive measure because of inconsistent
+                            // ordering from NuGet API.
+                            // When the bug is fixed on their side, we should be able to remove this.
+                            |> List.distinctBy (fun package -> package.Id)
 
-                    return FetchPageResult.Success packages
-                else
-                    return! fetchAllPages (currentPage + 1) newPackages
+                        return FetchPageResult.Success packages
+                    else
+                        return! fetchAllPages (currentPage + 1) newPackages
 
-            | Error error -> return FetchPageResult.DeserializationError error
-        }
+                | Error error ->
+                    return FetchPageResult.DeserializationError error
+            }
 
         let fetchPackages = async {
             match! fetchAllPages 0 [] with
@@ -345,7 +382,9 @@ type Components with
         let currentStep, setCurrentStep =
             React.useState Step.IndexingPackageList
 
-        let onIndexingPackageListCompleted (packages: V3.SearchResponse.Package list) =
+        let onIndexingPackageListCompleted
+            (packages: V3.SearchResponse.Package list)
+            =
             setCurrentStep (Step.IndexingLastPackageVersion packages)
 
         let onIndexingLastPackageVersionCompleted

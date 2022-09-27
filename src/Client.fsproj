@@ -22,6 +22,7 @@
     <Compile Include="Types/SearchOptions.fs" />
     <Compile Include="Types/CompositeTypes.fs" />
     <Compile Include="Router.fs" />
+    <Compile Include="Contexts/NuGetRegistration5Semver1Cache.fs" />
     <Compile Include="Components/Components.fs" />
     <Compile Include="Components/AnErrorOccured.fs" />
     <Compile Include="Components/Navbar.fs" />
