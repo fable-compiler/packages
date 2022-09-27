@@ -6,7 +6,6 @@ open Feliz.UseDeferred
 open Feliz.Bulma
 open Fable.Packages.Components
 open Fable.Packages.Types
-open Feliz.ReactMarkdown
 open Browser.Dom
 
 // Workaround to have React-refresh working

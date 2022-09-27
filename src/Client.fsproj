@@ -44,8 +44,5 @@
     <Compile Include="App.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Bindings\Glutinum.Feliz.ReactMarkdown\Glutinum.Feliz.ReactMarkdown.fsproj" />
-  </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

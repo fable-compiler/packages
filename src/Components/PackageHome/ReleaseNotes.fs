@@ -6,7 +6,6 @@ open Feliz.UseDeferred
 open Feliz.Bulma
 open Fable.Packages.Components
 open Fable.Packages.Types
-open Feliz.ReactMarkdown
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
