@@ -17,6 +17,7 @@ emitJsStatement () "import React from \"react\""
 
 [<RequireQualifiedAccess>]
 type private Step =
+    | CheckingCache
     | IndexingPackageList
     | IndexingLastPackageVersion of packages: V3.SearchResponse.Package list
 
@@ -32,90 +33,6 @@ type private FetchPageResult =
     | MaximumPackagesReached
 
 type SearchIndexingProps = {| OnReady: V3.SearchResponse.Package list -> unit |}
-
-let private indexPackages
-    (packages: V3.SearchResponse.Package list)
-    (setIndexingProgress: (IndexingProgress -> IndexingProgress) -> unit)
-    =
-    // In the future, we could use a web worker to cache previous request result
-    // In general, a specific package version is not going to be updated often
-    // Using a stale while revalidate strategy could be a good idea, it will give
-    // a good boost in performance between visits and we will have the latest version
-    // available most of the time
-    let chunkSize = 50
-
-    async {
-        let start = System.DateTime.Now
-
-        let batches =
-            packages
-            |> Seq.chunkBySize chunkSize
-            |> Seq.map (fun packages ->
-                packages
-                |> Seq.map (fun package ->
-                    let packageRegistrationUrl =
-                        package.Versions
-                        |> List.tryFind (fun version ->
-                            version.Version = package.Version
-                        )
-                        |> Option.map (fun versionInfo -> versionInfo.Id)
-
-                    match packageRegistrationUrl with
-                    | Some packageRegistrationUrl -> async {
-                        let! response =
-                            Http.request packageRegistrationUrl
-                            |> Http.method GET
-                            |> Http.header (Headers.accept "application/json")
-                            |> Http.send
-
-                        let jsonResult =
-                            Decode.fromString
-                                NuGetRegistration5Semver1.decoder
-                                response.responseText
-
-                        let result =
-                            match jsonResult with
-                            | Ok semverInfo ->
-                                {
-                                    Package = package
-                                    LastVersionInfo = semverInfo
-                                }
-                                |> Ok
-                            | Error errorMessage -> Error errorMessage
-
-                        return result
-                      }
-
-                    | None -> failwith "Package registration url not found"
-                )
-                |> Async.Parallel
-            )
-
-        let indexedPackages = ResizeArray(packages.Length)
-
-        for batch in batches do
-            let! batchResult = batch
-
-            // Update progress
-            setIndexingProgress (fun progress ->
-                { progress with
-                    CurrentPage = progress.CurrentPage + batchResult.Length
-                }
-            )
-
-            for package in batchResult do
-                match package with
-                | Ok package -> indexedPackages.Add package
-                | Error error ->
-                    // TODO: Inform user of potential errors and so missing packages
-                    console.error error
-
-        let finish = System.DateTime.Now
-        let elapsed = finish - start
-        printfn "Elapsed: %A" elapsed.TotalSeconds
-
-        return indexedPackages
-    }
 
 type Components with
 
@@ -140,8 +57,13 @@ type Components with
     static member private IndexingLastPackageVersion
         (packages: V3.SearchResponse.Package list)
         (onCompleted: IndexedNuGetPackage list -> unit)
-
         =
+        // In the future, we could use a web worker to cache previous request result
+        // In general, a specific package version is not going to be updated often
+        // Using a stale while revalidate strategy could be a good idea, it will give
+        // a good boost in performance between visits and we will have the latest version
+        // available most of the time
+        let chunkSize = 50
 
         let indexingProgress, setIndexingProgress =
             React.useStateWithUpdater
@@ -153,22 +75,81 @@ type Components with
         let cache = useNuGetRegistration5Semver1Cache ()
 
         let task = async {
+            let start = System.DateTime.Now
 
-            let cachedValues = cache.GetCache()
+            let batches =
+                packages
+                |> Seq.chunkBySize chunkSize
+                |> Seq.map (fun packages ->
+                    packages
+                    |> Seq.map (fun package ->
+                        let packageRegistrationUrl =
+                            package.Versions
+                            |> List.tryFind (fun version ->
+                                version.Version = package.Version
+                            )
+                            |> Option.map (fun versionInfo -> versionInfo.Id)
 
-            let! indexedPackages =
-                if cachedValues.Count = 0 then
-                    async {
-                        let! indexedPackages =
-                            indexPackages packages setIndexingProgress
+                        match packageRegistrationUrl with
+                        | Some packageRegistrationUrl -> async {
+                            let! response =
+                                Http.request packageRegistrationUrl
+                                |> Http.method GET
+                                |> Http.header (
+                                    Headers.accept "application/json"
+                                )
+                                |> Http.send
 
-                        cache.SetCache indexedPackages
-                        return indexedPackages
+                            let jsonResult =
+                                Decode.fromString
+                                    NuGetRegistration5Semver1.decoder
+                                    response.responseText
+
+                            let result =
+                                match jsonResult with
+                                | Ok semverInfo ->
+                                    {
+                                        Package = package
+                                        LastVersionInfo = semverInfo
+                                    }
+                                    |> Ok
+                                | Error errorMessage -> Error errorMessage
+
+                            return result
+                          }
+
+                        | None -> failwith "Package registration url not found"
+                    )
+                    |> Async.Parallel
+                )
+
+            let indexedPackages = ResizeArray(packages.Length)
+
+            for batch in batches do
+                let! batchResult = batch
+
+                // Update progress
+                setIndexingProgress (fun progress ->
+                    { progress with
+                        CurrentPage = progress.CurrentPage + batchResult.Length
                     }
-                else
-                    async { return cachedValues }
+                )
 
-            onCompleted (Seq.toList indexedPackages)
+                for package in batchResult do
+                    match package with
+                    | Ok package -> indexedPackages.Add package
+                    | Error error ->
+                        // TODO: Inform user of potential errors and so missing packages
+                        console.error error
+
+            let finish = System.DateTime.Now
+            let elapsed = finish - start
+            printfn "Elapsed: %A" elapsed.TotalSeconds
+            let result = Seq.toList indexedPackages
+            // Store the result on the cache for future visits on packages list page
+            cache.SetCache result
+            // Notify the parent component that we are ready
+            onCompleted result
         }
 
         let _ =
@@ -378,9 +359,42 @@ type Components with
         )
 
     [<ReactComponent>]
+    static member CheckingCache triggerIndexing indexingCompletedByUsingCache =
+        let cache = useNuGetRegistration5Semver1Cache ()
+
+        let checkCache = async {
+            let cacheValues = cache.GetCache()
+
+            if cacheValues.Length = 0 then
+                triggerIndexing ()
+            else
+                indexingCompletedByUsingCache cacheValues
+        }
+
+        let _ =
+            React.useDeferredNoCancel (
+                checkCache,
+                [|
+                    box triggerIndexing
+                    box indexingCompletedByUsingCache
+                |]
+            )
+
+        // This component should not have the time to be render
+        // because checking if we have a cache is a very fast operation.
+        // We put it here just in case
+        Components.DisplayProgress(
+            // Dummy progress value as this component doesn't really have a progress
+            {
+                CurrentPage = 0
+                TotalPages = -1 // Will be updated when the first request is made
+            },
+            "Fable.Packages is retrieving all the Fable packages from NuGet.org"
+        )
+
+    [<ReactComponent>]
     static member SearchIndexing(onReady: IndexedNuGetPackage list -> unit) =
-        let currentStep, setCurrentStep =
-            React.useState Step.IndexingPackageList
+        let currentStep, setCurrentStep = React.useState Step.CheckingCache
 
         let onIndexingPackageListCompleted
             (packages: V3.SearchResponse.Package list)
@@ -392,7 +406,14 @@ type Components with
             =
             onReady indexedPackages
 
+        let triggerIndexing () = setCurrentStep Step.IndexingPackageList
+
         match currentStep with
+        | Step.CheckingCache ->
+            Components.CheckingCache
+                triggerIndexing
+                onIndexingLastPackageVersionCompleted
+
         | Step.IndexingPackageList ->
             Components.IndexingPackageList onIndexingPackageListCompleted
 

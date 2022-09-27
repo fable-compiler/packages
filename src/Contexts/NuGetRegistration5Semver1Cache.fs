@@ -13,8 +13,8 @@ type NuGetRegistration5Semver1CacheContextType = {
     // TryFindById: string -> NuGetRegistration5Semver1 option
     // AddOrUpdate: NuGetRegistration5Semver1 -> unit
     // AddOrUpdateMany: NuGetRegistration5Semver1 list -> unit
-    GetCache: unit -> ResizeArray<IndexedNuGetPackage>
-    SetCache: ResizeArray<IndexedNuGetPackage> -> unit
+    GetCache: unit -> IndexedNuGetPackage list
+    SetCache: IndexedNuGetPackage list -> unit
 }
 
 let NuGetRegistration5Semver1CacheContext =
@@ -29,7 +29,7 @@ let useNuGetRegistration5Semver1Cache () =
 
 [<ReactComponent>]
 let NuGetRegistration5Semver1CacheProvider (children: ReactElement) =
-    let cache, setCache = React.useState (ResizeArray<IndexedNuGetPackage>())
+    let cache, setCache = React.useState ([])
 
     let service = {
         // TryFindById = fun id -> Map.tryFind id cache
