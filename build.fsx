@@ -6,18 +6,17 @@ open System.IO
 
 let args = Environment.GetCommandLineArgs()
 
-let isHelp =
-    Seq.contains "--help" args
-    || Seq.contains "help" args
+let isHelp = Seq.contains "--help" args || Seq.contains "help" args
 
 if isHelp then
-    printfn """
+    printfn
+        """
 Usage: dotnet fsi build.fsx [options]
 
 Options:
-    --watch     Start a local web server and watch for changes
-    --publish   Build a production version of the site and publish it GitHub Pages
-    --help, help      Show this help
+    --watch         Start a local web server and watch for changes
+    --publish       Build a production version of the site and publish it on GitHub Pages
+    --help, help    Show this help
     """
 
     exit 0
@@ -31,7 +30,6 @@ module Directory =
 module Path =
 
     let src = Path.Combine(__SOURCE_DIRECTORY__, "src")
-
 
 pipeline "Fable.Packages" {
     workingDir __SOURCE_DIRECTORY__
@@ -52,12 +50,8 @@ pipeline "Fable.Packages" {
         whenCmdArg "--watch"
         workingDir Path.src
         paralle
-        stage "Vite" {
-            run "npx vite dev"
-        }
-        stage "Fable" {
-            run "dotnet fable --watch"
-        }
+        stage "Vite" { run "npx vite dev" }
+        stage "Fable" { run "dotnet fable --watch" }
     }
 
     stage "Publish" {
