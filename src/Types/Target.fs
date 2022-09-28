@@ -27,4 +27,4 @@ module Target =
         | Target.Rust -> "fable-rust"
         | Target.Python -> "fable-python"
         | Target.Dart -> "fable-dart"
-        | Target.All -> "fable"
+        | Target.All -> "fable-all"
