@@ -370,28 +370,25 @@ let private fetchVersions (url: string) = asyncResult {
         |> Http.send
 
     let! catalogPage =
-        Decode.fromString
-            V3.CatalogRoot.CatalogPage.decoder
-            response.responseText
-        |> Result.mapError (fun errorMessage ->
-            [
-                "Error while decoding the search response JSON"
-                ""
-                errorMessage
-            ]
-            |> String.concat "\n"
-        )
+        Decode.fromString V3.CatalogRoot.CatalogPage.decoder response.responseText
+            |> Result.mapError (fun errorMessage ->
+                [
+                    "Error while decoding the search response JSON"
+                    "Context: Fetching package versions - catalog page"
+                    $"Url: %s{url}"
+                    ""
+                    errorMessage
+                ]
+                |> String.concat "\n"
+            )
 
-    let versions = catalogPage.Items |> Option.defaultValue []
-
-    return versions
-}
-
-let private fetchAllVersions (pages: V3.CatalogRoot.CatalogPage list) = asyncSeq {
-    for page in pages do
-        let! versions = fetchVersions page.Id
-
-        yield versions
+    match catalogPage.Items with
+    | Some items ->
+        return items
+    | None ->
+        return!
+            Error
+                $"Could not find any package version for the package. Url: '%s{url}'"
 }
 
 let private fetchCatalogPage (catalogRootUrl: string) = asyncResult {
@@ -406,30 +403,28 @@ let private fetchCatalogPage (catalogRootUrl: string) = asyncResult {
         |> Result.mapError (fun errorMessage ->
             [
                 "Error while decoding the search response JSON"
+                "Context: Fetching catalog page"
+                $"Url: %s{catalogRootUrl}"
                 ""
                 errorMessage
             ]
             |> String.concat "\n"
         )
 
-    // Should not happen because there are not elements it probably means
-    // that the package doesn't exist
-    if catalogRoot.Count = 0 then
-        return! Error "No catalog page found"
-    // If there is only one element, we can return it directly
-    else if catalogRoot.Count = 1 then
-        return catalogRoot.Items.Head.Items |> Option.defaultValue []
-    else
-        // If there are more than one element, we need to fetch each page
-        // individually and merge them
+    // Each page contains up to 64 elements
+    let acc = ResizeArray(64 * catalogRoot.Items.Length)
 
-        // Each page contains up to 64 elements
-        let allVersions = ResizeArray(64 * catalogRoot.Items.Length)
+    for item in catalogRoot.Items do
+        match item.Items with
+        | Some packages ->
+            acc.AddRange packages
+        // The response doesn't contains the package information
+        // Try to retrieve it via another call
+        | None ->
+            let! version = fetchVersions item.Id
+            acc.AddRange version
 
-        for batch in fetchAllVersions catalogRoot.Items do
-            allVersions.AddRange batch
-
-        return Seq.toList allVersions
+    return Seq.toList acc
 }
 
 let private fetchPackageInfo
@@ -463,6 +458,8 @@ let private fetchPackageInfo
             |> Result.mapError (fun errorMessage ->
                 [
                     "Error while decoding the search response JSON"
+                    "Context: Fetching package info"
+                    $"Url: %s{requestUrl}"
                     ""
                     errorMessage
                 ]
