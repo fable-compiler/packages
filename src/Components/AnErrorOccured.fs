@@ -48,6 +48,7 @@ type Components with
                                     Bulma.button.a [
                                         color.isDanger
                                         color.isLight
+                                        prop.href "https://github.com/fable-compiler/packages"
                                         prop.text "Report a problem"
                                     ]
                                 ]
@@ -70,7 +71,16 @@ type Components with
 
                         prop.children [
                             Bulma.title title
-                            Bulma.subtitle subtitle
+                            Bulma.subtitle [
+                                prop.style [
+                                    style.whitespace.preline
+                                    style.maxHeight (length.px 400)
+                                    style.overflowY.scroll
+                                ]
+                                spacing.mt6
+                                spacing.mb6
+                                prop.text subtitle
+                            ]
                             Bulma.buttons [
                                 buttons.isCentered
 
@@ -86,6 +96,7 @@ type Components with
                                     Bulma.button.a [
                                         color.isDanger
                                         color.isLight
+                                        prop.href "https://github.com/fable-compiler/packages"
                                         prop.text "Report a problem"
                                     ]
                                 ]
