@@ -109,6 +109,7 @@ NUGET
       FSharp.Core (>= 4.7.2)
 GITHUB
   remote: fable-compiler/fable-compiler.github.io
-    docs/scss/utilities.scss (e4229259595d6aa610ebac9a71b937943a2a946a)
-  remote: fsprojects/Paket
-    src/Paket.Core/Versioning/VersionRange.fs (eac93a466a2ed15c5b8bae3ad00e41d1dabc68f2)
+    docs/scss/bulma/custom_derived_variables.scss (7d2e2c0948922c18c0e2cbd2e0b55c9ae96a0803)
+    docs/scss/bulma/custom_initial_variables.scss (7d2e2c0948922c18c0e2cbd2e0b55c9ae96a0803)
+    docs/scss/main.scss (7d2e2c0948922c18c0e2cbd2e0b55c9ae96a0803)
+    docs/scss/utilities.scss (7d2e2c0948922c18c0e2cbd2e0b55c9ae96a0803)
