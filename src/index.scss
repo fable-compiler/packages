@@ -8,6 +8,7 @@
 @import "./../node_modules/bulma/sass/utilities/derived-variables";
 
 @import "./../paket-files/fable-compiler/fable-compiler.github.io/docs/scss/bulma/custom_derived_variables.scss";
+$footer-background-color: $white-bis;
 
 @import "../node_modules/bulma/sass/utilities/_all.sass";
 @import "./../node_modules/bulma/bulma.sass";
@@ -254,6 +255,28 @@
 
 .footer {
     margin-top: auto;
+    color: $text;
+    a {
+        color: $text !important;
+
+        &:hover {
+            color: $text !important;
+        }
+    }
+
+    @include tablet {
+        & > div {
+            padding-left: 5rem;
+            padding-right: 5rem;
+        }
+    }
+
+    @include desktop {
+        & > div {
+            padding-left: 15rem;
+            padding-right: 15rem;
+        }
+    }
 }
 
 .main-body {

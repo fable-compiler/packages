@@ -55,10 +55,15 @@ let App () =
             Bulma.footer [
                 Bulma.text.div [
                     size.isSize5
-                    prop.className "has-text-centered content"
+                    prop.className "content has-text-centered"
                     prop.children [
-                        Html.p "Fable.Packages is in prototype phase"
-                        Html.p "Future versions will aim to improve performances"
+                        Html.text "Documentation on how to set up a package for Fable.Packages is available "
+                        Html.a [
+                            prop.className "has-text-white is-underlined"
+                            prop.href "https://fable.io/docs/your-fable-project/author-a-fable-library.html#make-your-package-discoverable"
+                            prop.text "here"
+                        ]
+                        Html.hr [ ]
                         Html.text "Please report any issues on "
                         Html.a [
                             prop.className "has-text-white is-underlined"
