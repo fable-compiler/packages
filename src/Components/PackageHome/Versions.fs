@@ -7,10 +7,20 @@ open Fable.Packages
 open Fable.Packages.Components
 open Fable.Packages.Types
 open Fable.DateFunctions
+open Feliz.Lucide
 
 // Workaround to have React-refresh working
 // I need to open an issue on react-refresh to see if they can improve the detection
 emitJsStatement () "import React from \"react\""
+
+let private deprecationWarningToText (version : string) (reason : string) =
+    match reason with
+    | "Legacy" ->
+        $"{version} is deprecated as it is legacy and is no longer maintained."
+
+    | unkonwnReason ->
+        $"{version} is deprecated, for the reason : {unkonwnReason}"
+
 
 type Components with
 
@@ -35,6 +45,7 @@ type Components with
                             Html.th "Version"
                             Html.th "Downloads"
                             Html.th "Last updated"
+                            Html.th ""
                         ]
                     ]
 
@@ -91,6 +102,19 @@ type Components with
                                     ]
                                     Html.td [
                                         publishedText
+                                    ]
+                                    Html.td [
+                                        if package.CatalogEntry.Deprecation.IsSome then
+                                            React.fragment [
+                                                for reason in package.CatalogEntry.Deprecation.Value.Reasons do
+                                                    Html.div [
+                                                        prop.custom("data-tooltip", deprecationWarningToText package.CatalogEntry.Version reason)
+                                                        prop.className "has-tooltip-multiline has-tooltip-text-centered has-tooltip-left"
+                                                        prop.children [
+                                                            Lucide.AlertTriangle [ ]
+                                                        ]
+                                                    ]
+                                            ]
                                     ]
                                 ]
 
