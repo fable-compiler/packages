@@ -31,15 +31,14 @@ module NuGetRegistration5Semver1 =
 
 module V3 =
 
-    type SearchResponse =
-        {
-            TotalHits : int
-            Data : SearchResponse.Package list
-        }
+    type SearchResponse = {
+        TotalHits: int
+        Data: SearchResponse.Package list
+    }
 
     module SearchResponse =
 
-        let decoder : Decoder<SearchResponse> =
+        let decoder: Decoder<SearchResponse> =
             Decode.object (fun get -> {
                 TotalHits = get.Required.Field "totalHits" Decode.int
                 Data = get.Required.Field "data" (Decode.list Package.decoder)
@@ -50,62 +49,79 @@ module V3 =
             /// <summary>
             /// The ID of the matched package
             /// </summary>
-            Id : string
+            Id: string
             /// <summary>
             /// The full SemVer 2.0.0 version string of the package (could contain build metadata)
             /// </summary>
-            Version : string
-            Description : string option
+            Version: string
+            Description: string option
             /// <summary>
             /// All of the versions of the package matching the prerelease parameter
             /// </summary>
-            Versions : Package.Version list
-            Authors : (string list) option
-            IconUrl : string option
-            LicenseUrl : string option
-            Owners : (string list) option
-            ProjectUrl : string option
+            Versions: Package.Version list
+            Authors: (string list) option
+            IconUrl: string option
+            LicenseUrl: string option
+            Owners: (string list) option
+            ProjectUrl: string option
             /// <summary>
             /// The absolute URL to the associated <a href="https://docs.microsoft.com/en-us/nuget/api/registration-base-url-resource#registration-index">registration index</a>
             /// </summary>
-            Registration : string option
-            Summary : string option
-            Tags : (string array) option
-            Title : string option
+            Registration: string option
+            Summary: string option
+            Tags: (string array) option
+            Title: string option
             /// <summary>
             /// This value can be inferred by the sum of downloads in the <c>versions</c> array
             /// </summary>
-            TotalDownloads : int64 option
+            TotalDownloads: int64 option
             /// <summary>
             /// A JSON boolean indicating whether the package is <a href="https://docs.microsoft.com/en-us/nuget/nuget-org/id-prefix-reservation">verified</a>
             /// </summary>
-            Verified : bool option
+            Verified: bool option
             /// <summary>
             /// The package types defined by the package author (added in SearchQueryService/3.5.0)
             /// </summary>
-            PackageTypes : Package.PackageType list
+            PackageTypes: Package.PackageType list
         }
 
         module Package =
 
-            let decoder : Decoder<Package> =
+            let decoder: Decoder<Package> =
                 Decode.object (fun get -> {
                     Id = get.Required.Field "id" Decode.string
                     Version = get.Required.Field "version" Decode.string
                     Description = get.Optional.Field "description" Decode.string
-                    Versions = get.Required.Field "versions" (Decode.list Version.decoder)
-                    Authors = get.Optional.Field "authors" Decode.stringOrStringListDecoder
+                    Versions =
+                        get.Required.Field
+                            "versions"
+                            (Decode.list Version.decoder)
+                    Authors =
+                        get.Optional.Field
+                            "authors"
+                            Decode.stringOrStringListDecoder
                     IconUrl = get.Optional.Field "iconUrl" Decode.string
                     LicenseUrl = get.Optional.Field "licenseUrl" Decode.string
-                    Owners = get.Optional.Field "owners" Decode.stringOrStringListDecoder
+                    Owners =
+                        get.Optional.Field
+                            "owners"
+                            Decode.stringOrStringListDecoder
                     ProjectUrl = get.Optional.Field "projectUrl" Decode.string
-                    Registration = get.Optional.Field "registration" Decode.string
+                    Registration =
+                        get.Optional.Field "registration" Decode.string
                     Summary = get.Optional.Field "summary" Decode.string
-                    Tags = get.Optional.Field "tags" Decode.stringOrStringArrayDecoder
+                    Tags =
+                        get.Optional.Field
+                            "tags"
+                            Decode.stringOrStringArrayDecoder
                     Title = get.Optional.Field "title" Decode.string
-                    TotalDownloads = get.Optional.Field "totalDownloads" Decode.int64
+                    TotalDownloads =
+                        get.Optional.Field "totalDownloads" Decode.int64
                     Verified = get.Optional.Field "verified" Decode.bool
-                    PackageTypes = get.Required.Field "packageTypes" (Decode.list PackageType.decoder)
+                    PackageTypes =
+                        get.Required.Field
+                            "packageTypes"
+                            (Decode.list PackageType.decoder)
                 }
                 )
 
@@ -113,20 +129,20 @@ module V3 =
                 /// <summary>
                 /// The absolute URL to the associated <a href="https://docs.microsoft.com/en-us/nuget/api/registration-base-url-resource#registration-leaf">registration leaf</a>
                 /// </summary>
-                Id : string
+                Id: string
                 /// <summary>
                 /// The full SemVer 2.0.0 version string of the package (could contain build metadata)
                 /// </summary>
-                Version : string
+                Version: string
                 /// <summary>
                 /// The number of downloads for this specific package version
                 /// </summary>
-                Downloads : int
+                Downloads: int
             }
 
             module Version =
 
-                let decoder : Decoder<Version> =
+                let decoder: Decoder<Version> =
                     Decode.object (fun get -> {
                         Id = get.Required.Field "@id" Decode.string
                         Version = get.Required.Field "version" Decode.string
@@ -152,7 +168,6 @@ module V3 =
                         | unkown -> Decode.succeed (Unkown unkown)
                     )
 
-
     type CatalogRoot = {
         Count: int
         Items: CatalogRoot.CatalogPage list
@@ -169,7 +184,7 @@ module V3 =
             )
 
         type CatalogPage = {
-            Id : string
+            Id: string
             Count: int
             Items: (CatalogPage.Package list) option
             Parent: string option
@@ -211,6 +226,7 @@ module V3 =
 
                 type PackageDetails = {
                     Authors: (string list) option
+                    Deprecation: PackageDetails.Deprecation option
                     DependencyGroups: (PackageDetails.PackageDependencyGroup list) option
                     Description: string option
                     IconUrl: string option
@@ -237,16 +253,17 @@ module V3 =
                                 get.Optional.Field
                                     "authors"
                                     Decode.stringOrStringListDecoder
+                            Deprecation =
+                                get.Optional.Field
+                                    "deprecation"
+                                    Deprecation.decoder
                             DependencyGroups =
                                 get.Optional.Field
                                     "dependencyGroups"
                                     (Decode.list PackageDependencyGroup.decoder)
                             Description =
                                 get.Optional.Field "description" Decode.string
-                            IconUrl =
-                                get.Optional.Field
-                                    "iconUrl"
-                                    Decode.string
+                            IconUrl = get.Optional.Field "iconUrl" Decode.string
                             Id = get.Required.Field "id" Decode.string
                             LicenseUrl =
                                 get.Optional.Field "licenseUrl" Decode.string
@@ -276,6 +293,41 @@ module V3 =
                             Version = get.Required.Field "version" Decode.string
                         }
                         )
+
+                    type Deprecation = {
+                        Reasons: string list
+                        AlternatePackage: Deprecation.AlternatePackage option
+                    }
+
+                    module Deprecation =
+
+                        let decoder: Decoder<Deprecation> =
+                            Decode.object (fun get -> {
+                                Reasons =
+                                    get.Required.Field
+                                        "reasons"
+                                        (Decode.list Decode.string)
+                                AlternatePackage =
+                                    get.Optional.Field
+                                        "alternatePackage"
+                                        AlternatePackage.decoder
+                            }
+                            )
+
+                        type AlternatePackage = {
+                            Id: string
+                            Range: string
+                        }
+
+                        module AlternatePackage =
+
+                            let decoder: Decoder<AlternatePackage> =
+                                Decode.object (fun get -> {
+                                    Id = get.Required.Field "id" Decode.string
+                                    Range =
+                                        get.Required.Field "range" Decode.string
+                                }
+                                )
 
                     type PackageDependencyGroup = {
                         Dependencies: (PackageDependencyGroup.PackageDependency list) option

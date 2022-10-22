@@ -16,6 +16,7 @@ open Fable.Packages.Components.PackageHome.ReleaseNotes
 open Fable.Packages.Components.PackageHome.License
 open Fable.Packages.Components.PackageHome.InstallationInstructions
 open Fable.Packages.Components.PackageHome.Metadata
+open Fable.Packages.Components.PackageHome.DeprecationWarning
 open Fable.SimpleHttp
 open Thoth.Json
 open Fable.Core.JsInterop
@@ -549,6 +550,7 @@ type Pages with
             Html.div [
                 Bulma.section [
                     Components.PageHeader info.Package displayedVersion
+                    Components.DeprecationWarning info.Package info.Versions
                     Components.InstallationInstructions(
                         info.Package.Id,
                         displayedVersion
